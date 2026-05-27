@@ -43,11 +43,12 @@ It is fully optimized for **.NET 10** and built from the ground up to support **
 
 ### Option 1: Quick Start (For General Users)
 
-Because **IronPrompt** is built as a **Native AOT self-contained executable**, it runs 100% independently. You **do not need** to install .NET 10 SDK, .NET Runtimes, or any other frameworks!
+Because **IronPrompt** is compiled as a **Native AOT self-contained application**, it runs 100% independently on Windows. You **do not need** to install .NET 10 SDK, .NET Runtimes, or any other external frameworks!
 
-1.  Go to the [Releases](https://github.com/arda-ceylan/IronPrompt/releases) page.
-2.  Download the compiled standalone executable for Windows (`IronPrompt.exe`).
-3.  Double-click to launch the app instantly!
+1.  Go to the [Releases](https://github.com/your-username/IronPrompt/releases) page.
+2.  Select your preferred distribution format:
+    *   **Standard Installer (`IronPromptSetup.exe`)**: A professional installer wizard that automatically installs the program, registers shortcuts, and creates a Start Menu entry for easy access.
+    *   **Portable Archive (`IronPrompt-win-x64.zip`)**: A standalone, lightweight package. Simply extract the ZIP file anywhere on your system and run `IronPrompt.exe` immediately without installation.
 
 ### Option 2: Build & Run from Source (For Developers)
 
