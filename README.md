@@ -17,7 +17,7 @@ It is fully optimized for **.NET 10** and built from the ground up to support **
 *   **Dynamic Localization (TR / EN)**: Hot-swappable language support in Turkish and English via a custom segmented toggle at the bottom of the sidebar. All static texts, placeholders, and error dialogs translate instantly without app restarts.
 *   **Advanced Markdown Parsing**: Renders headers, lists, bullet points, horizontal dividers, inline code blocks, and bold/italic styles natively.
 *   **Rich Interactive Tables**: Beautifully structured grid-based markdown table viewer featuring alternate-row tinting and auto-scaling columns.
-*   **Smart Code Blocks**: High-tech syntax highlighting wrapper with a one-click copy button, dynamic copy state animations ("Copied!" / "Kopyalandı!"), and smooth horizontal scrolling.
+*   **Smart Code Blocks**: High-tech syntax highlighting wrapper with a one-click copy button and smooth horizontal scrolling.
 *   **Thinking Process Visualization**: Specialized glows and visual steps representing deep-thinking states (e.g. `<think>` blocks in reasoning models), keeping track of active thoughts vs completed responses.
 *   **Ollama Chat Integration**: Full-duplex streaming API support over local endpoints (`http://localhost:11434/api/chat`).
 *   **Session & Boundaries Persistence**: Remembers window bounds (Width, Height, position coordinates, and WindowState), language selection, scroll positions, and chat history.
@@ -75,6 +75,40 @@ dotnet publish IronPrompt/IronPrompt.csproj -c Release -r win-x64 --self-contain
 ```
 
 *The resulting executable will be generated under `bin\Release\net10.0\publish\win-x64\`.*
+
+---
+
+## Screenshots
+
+<p align="center">
+  <table align="center" border="0" cellpadding="5" cellspacing="5" style="border-collapse: collapse;">
+    <tr>
+      <td align="center" width="50%" valign="top" style="border: none;">
+        <img src="IronPrompt/Assets/screenshot1.png" alt="Main Chat Interface" width="100%" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);"/>
+        <br/>
+        <sub><b>Figure 1:</b> Main chat view featuring the custom TR/EN segmented switch and dark glassmorphism.</sub>
+      </td>
+      <td align="center" width="50%" valign="top" style="border: none;">
+        <img src="IronPrompt/Assets/screenshot2.png" alt="Deep Thinking and Code Blocks" width="100%" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);"/>
+        <br/>
+        <sub><b>Figure 2:</b> Interactive deep thinking reasoning step visualization and syntax-highlighted code blocks.</sub>
+      </td>
+    </tr>
+    <br/>
+    <tr>
+      <td align="center" width="50%" valign="top" style="border: none;">
+        <img src="IronPrompt/Assets/screenshot3.png" alt="English UI Localization" width="100%" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);"/>
+        <br/>
+        <sub><b>Figure 3:</b> Complete, seamless dynamic English UI translation in action across all controls.</sub>
+      </td>
+      <td align="center" width="50%" valign="top" style="border: none;">
+        <img src="IronPrompt/Assets/screenshot4.png" alt="Session Control Context Menu" width="100%" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);"/>
+        <br/>
+        <sub><b>Figure 4:</b> Tactile chat session control with dynamic inline rename and right-click delete options.</sub>
+      </td>
+    </tr>
+  </table>
+</p>
 
 ---
 
