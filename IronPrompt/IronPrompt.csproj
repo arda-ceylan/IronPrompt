@@ -7,6 +7,19 @@
     <PublishAot>True</PublishAot>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <ApplicationIcon>Assets\appicon.ico</ApplicationIcon>
+
+    <!-- Assembly Metadata -->
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Title>IronPrompt</Title>
+    <Product>IronPrompt</Product>
+    <Description>A sleek, state-of-the-art desktop client for local Ollama LLMs.</Description>
+    <Company>Arda Ceylan</Company>
+    <Authors>Arda Ceylan</Authors>
+    <Copyright>Copyright © 2026 Arda Ceylan. All rights reserved.</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/arda-ceylan/IronPrompt</RepositoryUrl>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DebugType>portable</DebugType>
