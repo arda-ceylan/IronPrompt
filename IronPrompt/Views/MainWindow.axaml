@@ -1,0 +1,473 @@
+<!--
+Copyright 2026 Arda Ceylan
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:IronPrompt.ViewModels"
+        xmlns:conv="using:IronPrompt.Converters"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1000" d:DesignHeight="600"
+        x:Class="IronPrompt.Views.MainWindow"
+        x:CompileBindings="True"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/appicon.ico"
+        Title="IronPrompt"
+        Background="#101018"
+        ExtendClientAreaToDecorationsHint="True">
+
+    <Window.Resources>
+        <conv:UserColorConverter x:Key="UserColorConverter"/>
+        <conv:EnumToBoolConverter x:Key="EnumToBoolConverter"/>
+        <conv:HeaderLevelToFontSizeConverter x:Key="HeaderLevelToFontSizeConverter"/>
+        <conv:NotNullToBoolConverter x:Key="NotNullToBoolConverter"/>
+        <conv:LanguageBackgroundConverter x:Key="LanguageBackgroundConverter"/>
+        <conv:LanguageForegroundConverter x:Key="LanguageForegroundConverter"/>
+    </Window.Resources>
+
+    <Window.Styles>
+        <Style Selector="ListBoxItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="CornerRadius" Value="20"/> 
+            <Setter Property="Padding" Value="15,10"/>
+            <Setter Property="Margin" Value="20,4"/>
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.2"/>
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+            <Setter Property="Background">
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                    <GradientStop Color="#00B4D8" Offset="0"/>
+                    <GradientStop Color="#9D4EDD" Offset="1"/>
+                </LinearGradientBrush>
+            </Setter>
+            <Setter Property="TextBlock.Foreground" Value="White"/>
+        </Style>
+
+        <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="#25FFFFFF"/>
+        </Style>
+
+        <Style Selector="ItemsControl TextBox">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+        </Style>
+    
+        <Style Selector="ItemsControl TextBox:pointerover /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+    
+        <Style Selector="ItemsControl TextBox:focus /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+
+        <Style Selector="Border TextBox">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+        </Style>
+        <Style Selector="Border TextBox:pointerover /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+        <Style Selector="Border TextBox:focus /template/ Border#PART_BorderElement">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+        </Style>
+    </Window.Styles>
+
+    <Grid ColumnDefinitions="280, *">
+        
+        <Border Grid.Column="0" Background="#1A1A2E">
+            <Grid RowDefinitions="Auto, Auto, *, Auto">
+                
+                <!-- Sidebar Title Bar Drag Region -->
+                <Border Grid.Row="0" Background="Transparent" WindowDecorationProperties.ElementRole="TitleBar">
+                    <TextBlock Text="{Binding SohbetlerTitle}" 
+                               Foreground="White" FontSize="24" FontWeight="Bold" 
+                               Margin="20,40,20,20"/>
+                </Border>
+                
+                <Button Grid.Row="1" Command="{Binding CreateNewSessionCommand}" Margin="20,0,20,20" CornerRadius="20" HorizontalAlignment="Stretch">
+                    <Button.Background>
+                        <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                            <GradientStop Color="#00B4D8" Offset="0"/>
+                            <GradientStop Color="#9D4EDD" Offset="1"/>
+                        </LinearGradientBrush>
+                    </Button.Background>
+                    <TextBlock Text="{Binding YeniSohbetButton}" Foreground="White" FontSize="16" HorizontalAlignment="Center" Margin="0,8"/>
+                </Button>
+
+                <ListBox Grid.Row="2" ItemsSource="{Binding Sessions}" SelectedItem="{Binding SelectedSession}" Background="Transparent" BorderThickness="0">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate x:DataType="vm:ChatSessionViewModel">
+                            <Grid VerticalAlignment="Center" Background="Transparent" Margin="5,5,5,5">
+                                <Grid.ContextMenu>
+                                    <ContextMenu x:DataType="vm:ChatSessionViewModel">
+                                        <MenuItem Header="{Binding $parent[Window].DataContext.YenidenAdlandirMenu}" Command="{Binding StartRenameCommand}"/>
+                                        <Separator/>
+                                        <MenuItem Header="{Binding $parent[Window].DataContext.SohbetiSilMenu}" 
+                                                  Command="{Binding $parent[Window].DataContext.DeleteSessionCommand}"
+                                                  CommandParameter="{Binding}"
+                                                  Foreground="#FF5555"/>
+                                    </ContextMenu>
+                                </Grid.ContextMenu>
+
+                                <StackPanel IsVisible="{Binding !IsEditing}">
+                                    <TextBlock Text="{Binding Title}" Foreground="White" FontSize="16" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                    <TextBlock Text="{Binding Subtitle}" Foreground="#A0A0B0" FontSize="12" Margin="0,2,0,0"/>
+                                </StackPanel>
+                                
+                                <TextBox IsVisible="{Binding IsEditing}" 
+                                         Text="{Binding Title, Mode=TwoWay}"
+                                         FontSize="14"
+                                         Foreground="White"
+                                         Background="#2A2A40"
+                                         BorderThickness="1"
+                                         BorderBrush="#00B4D8"
+                                         CornerRadius="4"
+                                         Padding="5,2">
+                                    <TextBox.KeyBindings>
+                                        <KeyBinding Gesture="Enter" Command="{Binding EndRenameCommand}"/>
+                                    </TextBox.KeyBindings>
+                                </TextBox>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <!-- Language Selector Segmented Switch -->
+                <Border Grid.Row="3" Background="#0AFFFFFF" BorderBrush="#15FFFFFF" BorderThickness="0,1,0,0" Padding="20,15">
+                    <Grid ColumnDefinitions="*, Auto">
+                        <TextBlock Text="Dil / Language" Foreground="#A0A0B0" FontSize="13" VerticalAlignment="Center"/>
+                        
+                        <Border Grid.Column="1" Background="#141424" CornerRadius="8" Padding="2">
+                            <StackPanel Orientation="Horizontal" Spacing="4">
+                                <!-- TR Button -->
+                                <Button Click="LanguageButton_Click" Tag="tr"
+                                        Width="44" Height="28" Padding="0" CornerRadius="6"
+                                        HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                        Cursor="Hand">
+                                    <Button.Styles>
+                                        <Style Selector="Button">
+                                            <Setter Property="Background" Value="{Binding CurrentLanguage, Converter={StaticResource LanguageBackgroundConverter}, ConverterParameter=tr}"/>
+                                            <Setter Property="Foreground" Value="{Binding CurrentLanguage, Converter={StaticResource LanguageForegroundConverter}, ConverterParameter=tr}"/>
+                                        </Style>
+                                    </Button.Styles>
+                                    <TextBlock Text="TR" FontSize="12" FontWeight="Bold"/>
+                                </Button>
+                                
+                                <!-- EN Button -->
+                                <Button Click="LanguageButton_Click" Tag="en"
+                                        Width="44" Height="28" Padding="0" CornerRadius="6"
+                                        HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                        Cursor="Hand">
+                                    <Button.Styles>
+                                        <Style Selector="Button">
+                                            <Setter Property="Background" Value="{Binding CurrentLanguage, Converter={StaticResource LanguageBackgroundConverter}, ConverterParameter=en}"/>
+                                            <Setter Property="Foreground" Value="{Binding CurrentLanguage, Converter={StaticResource LanguageForegroundConverter}, ConverterParameter=en}"/>
+                                        </Style>
+                                    </Button.Styles>
+                                    <TextBlock Text="EN" FontSize="12" FontWeight="Bold"/>
+                                </Button>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Border>
+            </Grid>
+        </Border>
+
+        <Border Grid.Column="1">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                    <GradientStop Color="#244B6D" Offset="0"/>
+                    <GradientStop Color="#2B1A4A" Offset="0.5"/>
+                    <GradientStop Color="#1E1E2E" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+            
+            <Grid RowDefinitions="Auto, *, Auto">
+                
+                <!-- Chat Area Title Bar Region -->
+                <Grid Grid.Row="0">
+                    <!-- Background Drag Region (handles window dragging) -->
+                    <Border Background="Transparent" WindowDecorationProperties.ElementRole="TitleBar"/>
+                    
+                    <!-- Foreground Interactive Content -->
+                    <Grid ColumnDefinitions="*, Auto" Margin="20,40,20,20">
+                        <!-- Left: Title -->
+                        <!-- Dynamic Session Title or Fallback -->
+                        <TextBlock Grid.Column="0" 
+                                   Text="{Binding SelectedSession.Title}" 
+                                   IsVisible="{Binding SelectedSession, Converter={StaticResource NotNullToBoolConverter}}"
+                                   Foreground="White" FontSize="20" FontWeight="SemiBold"
+                                   VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="0" 
+                                   Text="{Binding SeciliSohbetYok}" 
+                                   IsVisible="{Binding SelectedSession, Converter={StaticResource NotNullToBoolConverter}, ConverterParameter=invert}"
+                                   Foreground="White" FontSize="20" FontWeight="SemiBold"
+                                   VerticalAlignment="Center"/>
+                        
+                        <!-- Right: Styled Model Entry (Clickable and perfectly centered) -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" IsVisible="{Binding SelectedSession, Converter={StaticResource NotNullToBoolConverter}}">
+                            <Ellipse Width="8" Height="8" Fill="#00B4D8" VerticalAlignment="Center"/>
+                            <TextBlock Text="{Binding ModelLabel}" Foreground="#A0A0B0" FontSize="13" VerticalAlignment="Center"/>
+                            <TextBox Text="{Binding SelectedSession.Subtitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                     PlaceholderText="gemma4:e4b"
+                                     Background="#201F30"
+                                     Foreground="White"
+                                     BorderBrush="#334155"
+                                     BorderThickness="1"
+                                     CornerRadius="6"
+                                     Padding="10,4"
+                                     FontSize="13"
+                                     Width="150"
+                                     VerticalAlignment="Center"
+                                     VerticalContentAlignment="Center"/>
+                        </StackPanel>
+                    </Grid>
+                </Grid>
+
+                <ScrollViewer x:Name="ChatScrollViewer" Grid.Row="1" Margin="20,0">
+                    <ItemsControl ItemsSource="{Binding SelectedSession.Messages}" SizeChanged="ItemsControl_SizeChanged">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="vm:ChatMessageViewModel">
+                                <StackPanel Margin="0,10,0,20">
+                                    
+                                    <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,0,0,10">
+                                        <Border Width="30" Height="30" CornerRadius="15" Background="{Binding IsUser, Converter={StaticResource UserColorConverter}}"/> 
+                                        <TextBlock Text="{Binding SenderName}" Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                    </StackPanel>
+
+                                    <!-- Thinking Process Block -->
+                                    <Border IsVisible="{Binding HasThinking}" 
+                                            Background="#0DFFFFFF" 
+                                            BorderBrush="#1AFFFFFF" 
+                                            BorderThickness="1" 
+                                            CornerRadius="8" 
+                                            Margin="40,0,0,15" 
+                                            Padding="12">
+                                        <StackPanel Spacing="8">
+                                            <!-- Title & Status -->
+                                            <Grid ColumnDefinitions="Auto, *, Auto">
+                                                <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8">
+                                                    <!-- Glowing/pulsing icon when thinking -->
+                                                    <Ellipse Width="8" Height="8" VerticalAlignment="Center">
+                                                        <Ellipse.Fill>
+                                                            <SolidColorBrush Color="#00B4D8"/>
+                                                        </Ellipse.Fill>
+                                                    </Ellipse>
+                                                    <TextBlock Text="{Binding $parent[Window].DataContext.DusunmeSureciHeader}" 
+                                                               Foreground="#00B4D8" 
+                                                               FontWeight="SemiBold" 
+                                                               FontSize="13" 
+                                                               VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                                
+                                                <Border Grid.Column="1">
+                                                    <TextBlock Text="{Binding $parent[Window].DataContext.DusunuyorText}" 
+                                                               IsVisible="{Binding IsThinking}" 
+                                                               Foreground="#A0A0B0" 
+                                                               FontSize="12" 
+                                                               Margin="10,0,0,0"
+                                                               VerticalAlignment="Center" 
+                                                               FontStyle="Italic"/>
+                                                </Border>
+                                                
+                                                <TextBlock Grid.Column="1" 
+                                                           Text="{Binding $parent[Window].DataContext.TamamlandiText}" 
+                                                           IsVisible="{Binding !IsThinking}" 
+                                                           Foreground="#60FFFFFF" 
+                                                           FontSize="12" 
+                                                           Margin="10,0,0,0"
+                                                           VerticalAlignment="Center"/>
+                                            </Grid>
+                                            
+                                            <!-- Thinking Text -->
+                                            <SelectableTextBlock Text="{Binding ThinkingText}" 
+                                                                 Foreground="#8A9A9E" 
+                                                                 FontSize="13" 
+                                                                 FontStyle="Italic" 
+                                                                 TextWrapping="Wrap"
+                                                                 Margin="16,4,0,0"/>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <!-- Waiting / Thinking Placeholder Block -->
+                                    <Border IsVisible="{Binding IsWaiting}" 
+                                            Background="#0DFFFFFF" 
+                                            BorderBrush="#1AFFFFFF" 
+                                            BorderThickness="1" 
+                                            CornerRadius="8" 
+                                            Margin="40,0,0,15" 
+                                            Padding="12">
+                                        <StackPanel Orientation="Horizontal" Spacing="10">
+                                            <Ellipse Width="8" Height="8" VerticalAlignment="Center">
+                                                <Ellipse.Fill>
+                                                    <SolidColorBrush Color="#FF6B6B"/>
+                                                </Ellipse.Fill>
+                                            </Ellipse>
+                                            <TextBlock Text="{Binding $parent[Window].DataContext.GemmaYanitHazirliyor}" 
+                                                       Foreground="#A0A0B0" 
+                                                       FontSize="13" 
+                                                       FontStyle="Italic"
+                                                       VerticalAlignment="Center"/>
+                                        </StackPanel>
+                                    </Border>
+                                    
+                                    <ItemsControl ItemsSource="{Binding Parts}" Margin="40,0,0,0">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="vm:MessagePartViewModel">                                                <Panel>
+                                                    <!-- Text Part with Inline Markdown (Bold & Inline Code) support -->
+                                                    <SelectableTextBlock IsVisible="{Binding Type, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Text}"
+                                                                         conv:MarkdownHelper.MarkdownText="{Binding Content}"
+                                                                         TextWrapping="Wrap" 
+                                                                         Padding="0,0,0,10"
+                                                                         Foreground="#E0E0E0"
+                                                                         FontSize="15"/>
+
+                                                    <!-- Header Part with Gradient Color -->
+                                                    <SelectableTextBlock IsVisible="{Binding Type, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Header}"
+                                                                         Text="{Binding Content}"
+                                                                         FontWeight="Bold"
+                                                                         TextWrapping="Wrap"
+                                                                         Margin="0,15,0,8"
+                                                                         FontSize="{Binding HeaderLevel, Converter={StaticResource HeaderLevelToFontSizeConverter}}">
+                                                        <SelectableTextBlock.Foreground>
+                                                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                                                                <GradientStop Color="#00B4D8" Offset="0"/>
+                                                                <GradientStop Color="#9D4EDD" Offset="1"/>
+                                                            </LinearGradientBrush>
+                                                        </SelectableTextBlock.Foreground>
+                                                    </SelectableTextBlock>
+
+                                                    <!-- Separator Part with Gradient Divider -->
+                                                    <Border IsVisible="{Binding Type, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Separator}"
+                                                            Height="1"
+                                                            Margin="0,15,0,15"
+                                                            CornerRadius="0.5">
+                                                        <Border.Background>
+                                                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                                                                <GradientStop Color="#10FFFFFF" Offset="0"/>
+                                                                <GradientStop Color="#40FFFFFF" Offset="0.5"/>
+                                                                <GradientStop Color="#10FFFFFF" Offset="1"/>
+                                                            </LinearGradientBrush>
+                                                        </Border.Background>
+                                                    </Border>
+
+                                                    <!-- Code Block Part (SelectableTextBlock with CodeHighlightHelper and ScrollViewer for horizontal scroll) -->
+                                                    <Border IsVisible="{Binding Type, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Code}"
+                                                            Background="#1E1E24" 
+                                                            CornerRadius="8" 
+                                                            Margin="0,5,0,15" 
+                                                            Padding="15,15,15,10">
+                                                        <Grid RowDefinitions="*, Auto">
+                                                            <ScrollViewer Grid.Row="0" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" Margin="0,0,0,10">
+                                                                <SelectableTextBlock conv:CodeHighlightHelper.CodeText="{Binding Content}" 
+                                                                                     Foreground="#ABB2BF" 
+                                                                                     FontFamily="Consolas, Monospace"
+                                                                                     FontSize="14"/>
+                                                            </ScrollViewer>
+                                                            
+                                                            <!-- Action bar at the bottom with KOD BLOĞU status and Copy Button -->
+                                                            <Border Grid.Row="1" BorderBrush="#15FFFFFF" BorderThickness="0,1,0,0" Padding="0,8,0,0">
+                                                                <Grid ColumnDefinitions="*, Auto">
+                                                                    <TextBlock Grid.Column="0" Text="{Binding $parent[Window].DataContext.KodBloguHeader}" Foreground="#5C6370" FontSize="11" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                                    <Button Grid.Column="1" 
+                                                                            Click="CopyCodeButton_Click" 
+                                                                            Tag="{Binding Content}"
+                                                                            Background="#2D3139" 
+                                                                            Foreground="#ABB2BF" 
+                                                                            CornerRadius="6" 
+                                                                            Width="110"
+                                                                            Height="28"
+                                                                            Padding="0"
+                                                                            HorizontalContentAlignment="Center"
+                                                                            VerticalContentAlignment="Center"
+                                                                            Cursor="Hand"
+                                                                            VerticalAlignment="Center">
+                                                                        <Button.Styles>
+                                                                            <Style Selector="Button:pointerover /template/ ContentPresenter">
+                                                                                <Setter Property="Background" Value="#3E4451"/>
+                                                                                <Setter Property="TextBlock.Foreground" Value="White"/>
+                                                                            </Style>
+                                                                        </Button.Styles>
+                                                                        <StackPanel Orientation="Horizontal" Spacing="6">
+                                                                            <TextBlock Text="📋" FontSize="12" VerticalAlignment="Center"/>
+                                                                            <TextBlock Text="{Binding $parent[Window].DataContext.KopyalaText}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                                        </StackPanel>
+                                                                    </Button>
+                                                                </Grid>
+                                                            </Border>
+                                                        </Grid>
+                                                    </Border>
+
+                                                    <!-- Table Part (Custom MarkdownTableControl with ScrollViewer for horizontal scroll) -->
+                                                    <ScrollViewer IsVisible="{Binding Type, Converter={StaticResource EnumToBoolConverter}, ConverterParameter=Table}"
+                                                                  HorizontalScrollBarVisibility="Auto" 
+                                                                  VerticalScrollBarVisibility="Disabled"
+                                                                  Margin="0,5,0,15">
+                                                        <conv:MarkdownTableControl Headers="{Binding TableHeaders}" Rows="{Binding TableRows}"/>
+                                                    </ScrollViewer>
+                                                </Panel>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+
+                                </StackPanel>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <Grid Grid.Row="2" ColumnDefinitions="*, Auto" Margin="20,20,20,40">
+                    <Border Grid.Column="0" CornerRadius="18" BorderThickness="1" Margin="0,0,15,0" MinHeight="36" VerticalAlignment="Center">
+                        <Border.BorderBrush>
+                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                                <GradientStop Color="#00B4D8" Offset="0"/>
+                                <GradientStop Color="#FF6B6B" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.BorderBrush>
+                        <TextBox x:Name="PromptTextBox"
+                                 Background="Transparent" Foreground="White" BorderThickness="0" 
+                                 PlaceholderText="{Binding GemmaSorPlaceholder}" Text="{Binding InputText, UpdateSourceTrigger=PropertyChanged}"
+                                 VerticalAlignment="Center" VerticalContentAlignment="Center" Margin="10,0" Padding="2,4"
+                                 IsEnabled="{Binding !IsGenerating}"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap"
+                                 MaxHeight="160"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                    </Border>
+                    
+                    <Button Grid.Column="1" Command="{Binding SendMessageCommand}" IsEnabled="{Binding !IsGenerating}" Width="80" Height="36" CornerRadius="18" VerticalAlignment="Center">
+                        <Button.Background>
+                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                                <GradientStop Color="#00B4D8" Offset="0"/>
+                                <GradientStop Color="#9D4EDD" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Button.Background>
+                        <TextBlock Text="{Binding GonderButton}" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="14"/>
+                    </Button>
+                </Grid>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

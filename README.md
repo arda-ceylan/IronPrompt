@@ -1,0 +1,87 @@
+# IronPrompt
+
+[![Framework](https://img.shields.io/badge/framework-.NET%2010-blueviolet)](https://dotnet.microsoft.com/)
+[![UI Library](https://img.shields.io/badge/ui--library-Avalonia%20UI-blue)](https://avaloniaui.net/)
+[![Native AOT](https://img.shields.io/badge/AOT%20Compatible-100%25-success)](#native-aot-compilation)
+[![License](https://img.shields.io/badge/license-Apache%202.0-orange)](LICENSE)
+
+**IronPrompt** is a sleek, state-of-the-art desktop client for interacting with local Ollama LLMs. Designed with modern aesthetics and premium glassmorphism in mind, it provides a fast, tactile, and highly responsive user experience. 
+
+It is fully optimized for **.NET 10** and built from the ground up to support **100% Native AOT (Ahead-of-Time)** compilation, achieving near-instantaneous startup times and minimum memory footprints.
+
+---
+
+## Key Features
+
+*   **Premium Glassmorphism UI**: Harmony-driven dark mode color palette (`#101018` base) styled with smooth gradient buttons, semi-transparent panels, and subtle micro-animations.
+*   **Dynamic Localization (TR / EN)**: Hot-swappable language support in Turkish and English via a custom segmented toggle at the bottom of the sidebar. All static texts, placeholders, and error dialogs translate instantly without app restarts.
+*   **Advanced Markdown Parsing**: Renders headers, lists, bullet points, horizontal dividers, inline code blocks, and bold/italic styles natively.
+*   **Rich Interactive Tables**: Beautifully structured grid-based markdown table viewer featuring alternate-row tinting and auto-scaling columns.
+*   **Smart Code Blocks**: High-tech syntax highlighting wrapper with a one-click copy button, dynamic copy state animations ("Copied!" / "Kopyalandı!"), and smooth horizontal scrolling.
+*   **Thinking Process Visualization**: Specialized glows and visual steps representing deep-thinking states (e.g. `<think>` blocks in reasoning models), keeping track of active thoughts vs completed responses.
+*   **Ollama Chat Integration**: Full-duplex streaming API support over local endpoints (`http://localhost:11434/api/chat`).
+*   **Session & Boundaries Persistence**: Remembers window bounds (Width, Height, position coordinates, and WindowState), language selection, scroll positions, and chat history.
+
+---
+
+## Technical Architecture
+
+*   **Framework**: .NET 10 & Avalonia UI (MVVM)
+*   **Code Generation**: Utilizes source generators (`CommunityToolkit.Mvvm`) for reactive bindings.
+*   **JSON Serialization**: Configured using compile-time source-generated JSON reflection contexts (`System.Text.Json.Serialization.JsonSerializerContext`) to ensure full Native AOT compatibility.
+
+---
+
+## Getting Started
+
+### Prerequisites (For Everyone)
+
+*   **Ollama**: Ensure Ollama is installed and running locally on your machine:
+    ```bash
+    ollama run gemma4:e4b # Or any model of your choice (e.g. gemma4:26b)
+    ```
+
+### Option 1: Quick Start (For General Users)
+
+Because **IronPrompt** is built as a **Native AOT self-contained executable**, it runs 100% independently. You **do not need** to install .NET 10 SDK, .NET Runtimes, or any other frameworks!
+
+1.  Go to the [Releases](https://github.com/arda-ceylan/IronPrompt/releases) page.
+2.  Download the compiled standalone executable for Windows (`IronPrompt.exe`).
+3.  Double-click to launch the app instantly!
+
+### Option 2: Build & Run from Source (For Developers)
+
+If you want to compile the project yourself or contribute to the codebase:
+
+1.  **Install .NET 10 SDK**: [Download .NET 10 SDK](https://dotnet.microsoft.com/download)
+2.  Clone the repository:
+    ```bash
+    git clone https://github.com/arda-ceylan/IronPrompt.git
+    cd IronPrompt
+    ```
+3.  Run the application using the dotnet CLI:
+    ```bash
+    dotnet run --project IronPrompt/IronPrompt.csproj
+    ```
+
+---
+
+## Native AOT Compilation
+
+To publish the application as a single-file, self-contained native executable with maximum optimization and no external dependencies:
+
+```bash
+dotnet publish IronPrompt/IronPrompt.csproj -c Release -r win-x64 --self-contained true
+```
+
+*The resulting executable will be generated under `bin\Release\net10.0\publish\win-x64\`.*
+
+---
+
+## License
+
+Copyright © 2026 **Arda Ceylan**. All rights reserved.
+
+Licensed under the **Apache License, Version 2.0** (the "License"). You may obtain a copy of the License in the [LICENSE](LICENSE) file or at:
+
+[http://www.apache.org/licenses/LICENSE-2.0](http://www.apache.org/licenses/LICENSE-2.0)
