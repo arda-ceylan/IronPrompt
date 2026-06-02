@@ -490,6 +490,7 @@ public partial class MainWindowViewModel : ObservableObject
         OnPropertyChanged(nameof(KopyalaText));
         OnPropertyChanged(nameof(KopyalandiText));
         OnPropertyChanged(nameof(KodBloguHeader));
+        OnPropertyChanged(nameof(OllamaOfflineWarning));
         
         if (SelectedSession != null && SelectedSession.Id == "loading")
         {
@@ -512,6 +513,24 @@ public partial class MainWindowViewModel : ObservableObject
     public string KopyalaText => CurrentLanguage == "tr" ? "Kopyala" : "Copy";
     public string KopyalandiText => CurrentLanguage == "tr" ? "Kopyalandı!" : "Copied!";
     public string KodBloguHeader => CurrentLanguage == "tr" ? "KOD BLOĞU" : "CODE BLOCK";
+    public string OllamaOfflineWarning => CurrentLanguage == "tr" 
+        ? "Ollama çalışmıyor! Lütfen arka planda Ollama uygulamasını başlatın..." 
+        : "Ollama is not running! Please start the Ollama application in the background...";
+
+    [ObservableProperty]
+    private bool _isOllamaOnline = true;
+
+    partial void OnIsOllamaOnlineChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanSendPrompt));
+    }
+
+    partial void OnIsGeneratingChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanSendPrompt));
+    }
+
+    public bool CanSendPrompt => IsOllamaOnline && !IsGenerating;
 
     public ObservableCollection<ChatSessionViewModel> Sessions { get; } = new();
 
@@ -532,6 +551,35 @@ public partial class MainWindowViewModel : ObservableObject
         "Sessions"
     );
 
+    private static readonly HttpClient _httpClient = new HttpClient { Timeout = TimeSpan.FromMilliseconds(800) };
+
+    private async Task StartOllamaConnectionCheck()
+    {
+        while (true)
+        {
+            bool isOnline = false;
+            try
+            {
+                using var response = await _httpClient.GetAsync("http://localhost:11434/");
+                isOnline = response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.OK;
+            }
+            catch
+            {
+                isOnline = false;
+            }
+
+            // Update on UI thread
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                IsOllamaOnline = isOnline;
+            });
+
+            if (isOnline) break;
+
+            await Task.Delay(1500);
+        }
+    }
+
     public MainWindowViewModel()
     {
         _selectedSession = new ChatSessionViewModel
@@ -541,6 +589,7 @@ public partial class MainWindowViewModel : ObservableObject
             Subtitle = "gemma4:e4b"
         };
         _ = LoadSessionsAsync();
+        StartOllamaConnectionCheck();
     }
 
     private async Task LoadSessionsAsync()
@@ -673,7 +722,8 @@ public partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private async Task SendMessage()
     {
-        if (string.IsNullOrWhiteSpace(InputText) || SelectedSession == null || IsGenerating) return;
+        await StartOllamaConnectionCheck();
+        if (string.IsNullOrWhiteSpace(InputText) || SelectedSession == null || IsGenerating || !IsOllamaOnline) return;
 
         var prompt = InputText;
         InputText = string.Empty;
