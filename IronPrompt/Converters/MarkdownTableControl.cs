@@ -17,6 +17,7 @@ using Avalonia.Controls;
 using Avalonia.Layout;
 using Avalonia.Media;
 using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using IronPrompt.ViewModels;
 
 namespace IronPrompt.Converters
@@ -51,10 +52,35 @@ namespace IronPrompt.Converters
         {
             base.OnPropertyChanged(change);
 
-            if (change.Property == HeadersProperty || change.Property == RowsProperty)
+            if (change.Property == HeadersProperty)
             {
+                if (change.OldValue is INotifyCollectionChanged oldCol)
+                {
+                    oldCol.CollectionChanged -= CollectionChangedHandler;
+                }
+                if (change.NewValue is INotifyCollectionChanged newCol)
+                {
+                    newCol.CollectionChanged += CollectionChangedHandler;
+                }
                 BuildTable();
             }
+            else if (change.Property == RowsProperty)
+            {
+                if (change.OldValue is INotifyCollectionChanged oldCol)
+                {
+                    oldCol.CollectionChanged -= CollectionChangedHandler;
+                }
+                if (change.NewValue is INotifyCollectionChanged newCol)
+                {
+                    newCol.CollectionChanged += CollectionChangedHandler;
+                }
+                BuildTable();
+            }
+        }
+
+        private void CollectionChangedHandler(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            BuildTable();
         }
 
         private void BuildTable()
