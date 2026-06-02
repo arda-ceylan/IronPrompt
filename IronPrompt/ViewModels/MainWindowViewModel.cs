@@ -589,7 +589,7 @@ public partial class MainWindowViewModel : ObservableObject
             Subtitle = "gemma4:e4b"
         };
         _ = LoadSessionsAsync();
-        StartOllamaConnectionCheck();
+        _ = StartOllamaConnectionCheck();
     }
 
     private async Task LoadSessionsAsync()
