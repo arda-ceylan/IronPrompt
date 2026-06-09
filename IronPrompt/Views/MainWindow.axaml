@@ -26,7 +26,8 @@ limitations under the License.
         Icon="/Assets/appicon.ico"
         Title="IronPrompt"
         Background="#101018"
-        ExtendClientAreaToDecorationsHint="True">
+        ExtendClientAreaToDecorationsHint="True"
+        DragDrop.AllowDrop="True">
 
     <Window.Resources>
         <conv:UserColorConverter x:Key="UserColorConverter"/>
@@ -35,6 +36,7 @@ limitations under the License.
         <conv:NotNullToBoolConverter x:Key="NotNullToBoolConverter"/>
         <conv:LanguageBackgroundConverter x:Key="LanguageBackgroundConverter"/>
         <conv:LanguageForegroundConverter x:Key="LanguageForegroundConverter"/>
+        <conv:PathToBitmapConverter x:Key="PathToBitmapConverter"/>
     </Window.Resources>
 
     <Window.Styles>
@@ -154,43 +156,40 @@ limitations under the License.
                     </ListBox.ItemTemplate>
                 </ListBox>
 
-                <!-- Language Selector Segmented Switch -->
-                <Border Grid.Row="3" Background="#0AFFFFFF" BorderBrush="#15FFFFFF" BorderThickness="0,1,0,0" Padding="20,15">
-                    <Grid ColumnDefinitions="*, Auto">
-                        <TextBlock Text="Dil / Language" Foreground="#A0A0B0" FontSize="13" VerticalAlignment="Center"/>
-                        
-                        <Border Grid.Column="1" Background="#141424" CornerRadius="8" Padding="2">
-                            <StackPanel Orientation="Horizontal" Spacing="4">
-                                <!-- TR Button -->
-                                <Button Click="LanguageButton_Click" Tag="tr"
-                                        Width="44" Height="28" Padding="0" CornerRadius="6"
-                                        HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
-                                        Cursor="Hand">
-                                    <Button.Styles>
-                                        <Style Selector="Button">
-                                            <Setter Property="Background" Value="{Binding CurrentLanguage, Converter={StaticResource LanguageBackgroundConverter}, ConverterParameter=tr}"/>
-                                            <Setter Property="Foreground" Value="{Binding CurrentLanguage, Converter={StaticResource LanguageForegroundConverter}, ConverterParameter=tr}"/>
-                                        </Style>
-                                    </Button.Styles>
-                                    <TextBlock Text="TR" FontSize="12" FontWeight="Bold"/>
-                                </Button>
-                                
-                                <!-- EN Button -->
-                                <Button Click="LanguageButton_Click" Tag="en"
-                                        Width="44" Height="28" Padding="0" CornerRadius="6"
-                                        HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
-                                        Cursor="Hand">
-                                    <Button.Styles>
-                                        <Style Selector="Button">
-                                            <Setter Property="Background" Value="{Binding CurrentLanguage, Converter={StaticResource LanguageBackgroundConverter}, ConverterParameter=en}"/>
-                                            <Setter Property="Foreground" Value="{Binding CurrentLanguage, Converter={StaticResource LanguageForegroundConverter}, ConverterParameter=en}"/>
-                                        </Style>
-                                    </Button.Styles>
-                                    <TextBlock Text="EN" FontSize="12" FontWeight="Bold"/>
-                                </Button>
-                            </StackPanel>
-                        </Border>
-                    </Grid>
+                <!-- Settings Button -->
+                <Border Grid.Row="3" Background="#0AFFFFFF" BorderBrush="#15FFFFFF" BorderThickness="0,1,0,0" Padding="20,12">
+                    <Button Command="{Binding OpenSettingsCommand}"
+                            ToolTip.Tip="{Binding SettingsTitle}"
+                            Background="Transparent" BorderThickness="0"
+                            Width="36" Height="36" Padding="0" CornerRadius="18"
+                            HorizontalAlignment="Left" VerticalAlignment="Center"
+                            Cursor="Hand">
+                        <Button.Styles>
+                            <Style Selector="Button">
+                                <Setter Property="Background" Value="Transparent"/>
+                                <Setter Property="Transitions">
+                                    <Transitions>
+                                        <BrushTransition Property="Background" Duration="0:0:0.2"/>
+                                    </Transitions>
+                                </Setter>
+                            </Style>
+                            <Style Selector="Button:hover">
+                                <Setter Property="Background" Value="#15FFFFFF"/>
+                            </Style>
+                            <Style Selector="Button TextBlock">
+                                <Setter Property="Foreground" Value="#A0A0B0"/>
+                                <Setter Property="Transitions">
+                                    <Transitions>
+                                        <BrushTransition Property="Foreground" Duration="0:0:0.2"/>
+                                    </Transitions>
+                                </Setter>
+                            </Style>
+                            <Style Selector="Button:hover TextBlock">
+                                <Setter Property="Foreground" Value="#00B4D8"/>
+                            </Style>
+                        </Button.Styles>
+                        <TextBlock Text="⚙" FontSize="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Button>
                 </Border>
             </Grid>
         </Border>
@@ -256,6 +255,24 @@ limitations under the License.
                                         <Border Width="30" Height="30" CornerRadius="15" Background="{Binding IsUser, Converter={StaticResource UserColorConverter}}"/> 
                                         <TextBlock Text="{Binding SenderName}" Foreground="White" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                     </StackPanel>
+
+                                    <!-- Chat Message Attached Images -->
+                                    <ItemsControl ItemsSource="{Binding ImagePaths}" Margin="40,0,0,10" IsVisible="{Binding ImagePaths.Count}">
+                                        <ItemsControl.ItemsPanel>
+                                            <ItemsPanelTemplate>
+                                                <WrapPanel Orientation="Horizontal" HorizontalAlignment="Left"/>
+                                            </ItemsPanelTemplate>
+                                        </ItemsControl.ItemsPanel>
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="x:String">
+                                                <Border CornerRadius="8" ClipToBounds="True" Margin="0,0,10,10" 
+                                                        Width="180" Height="120"
+                                                        BorderBrush="#2A2A40" BorderThickness="1">
+                                                    <Image Source="{Binding, Converter={StaticResource PathToBitmapConverter}}" Stretch="UniformToFill"/>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
 
                                     <!-- Thinking Process Block -->
                                     <Border IsVisible="{Binding HasThinking}" 
@@ -478,9 +495,92 @@ limitations under the License.
                         </Grid>
                     </Border>
 
+                    <!-- Model Vision Warning Banner -->
+                    <Border IsVisible="{Binding ShowModelVisionWarning}" 
+                            Background="#332211" 
+                            BorderBrush="#FFB000" 
+                            BorderThickness="1" 
+                            CornerRadius="14" 
+                            Padding="15,10"
+                            Margin="0,0,0,5">
+                        <Grid ColumnDefinitions="Auto, *">
+                            <!-- Glowing yellow/orange dot -->
+                            <Ellipse Grid.Column="0" Width="10" Height="10" Fill="#FFB000" Margin="0,0,12,0" VerticalAlignment="Center">
+                                <Ellipse.Styles>
+                                    <Style Selector="Ellipse">
+                                        <Style.Animations>
+                                            <Animation Duration="0:0:1.5" IterationCount="Infinite">
+                                                <KeyFrame KeyTime="0:0:0">
+                                                    <Setter Property="Opacity" Value="0.3"/>
+                                                </KeyFrame>
+                                                <KeyFrame KeyTime="0:0:0.75">
+                                                    <Setter Property="Opacity" Value="1.0"/>
+                                                </KeyFrame>
+                                                <KeyFrame KeyTime="0:0:1.5">
+                                                    <Setter Property="Opacity" Value="0.3"/>
+                                                </KeyFrame>
+                                            </Animation>
+                                        </Style.Animations>
+                                    </Style>
+                                </Ellipse.Styles>
+                            </Ellipse>
+                            <TextBlock Grid.Column="1" 
+                                       Text="{Binding ModelVisionWarningText}" 
+                                       Foreground="#FFCC66" 
+                                       FontSize="13" 
+                                       FontWeight="SemiBold"
+                                       VerticalAlignment="Center"
+                                       TextWrapping="Wrap"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Attached Image Previews -->
+                    <ItemsControl ItemsSource="{Binding PendingImagePaths}" Margin="0,0,0,5" IsVisible="{Binding PendingImagePaths.Count}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" HorizontalAlignment="Left"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <Border CornerRadius="8" ClipToBounds="True" Margin="0,0,10,10" 
+                                        Width="80" Height="80"
+                                        BorderBrush="#2A2A40" BorderThickness="1"
+                                        HorizontalAlignment="Left" VerticalAlignment="Top">
+                                    <Panel>
+                                        <Image Source="{Binding, Converter={StaticResource PathToBitmapConverter}}" Stretch="UniformToFill"/>
+                                        <!-- Remove Button Overlay -->
+                                        <Button Width="20" Height="20" CornerRadius="10" Padding="0" Margin="0"
+                                                Background="#80000000" Foreground="White"
+                                                HorizontalAlignment="Right" VerticalAlignment="Top"
+                                                Command="{Binding $parent[Window].DataContext.RemovePendingImageCommand}"
+                                                CommandParameter="{Binding}">
+                                            <TextBlock Text="×" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="Bold"/>
+                                        </Button>
+                                    </Panel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
                     <!-- Chat Input Grid -->
-                    <Grid ColumnDefinitions="*, Auto">
-                        <Border Grid.Column="0" CornerRadius="18" BorderThickness="1" Margin="0,0,15,0" MinHeight="36" VerticalAlignment="Center">
+                    <Grid ColumnDefinitions="Auto, *, Auto">
+                        <!-- Paperclip Attachment Button -->
+                        <Button Grid.Column="0" 
+                                Click="AttachImageButton_Click" 
+                                ToolTip.Tip="{Binding ImageAttachTooltip}"
+                                IsEnabled="{Binding IsAttachmentEnabled}" 
+                                Width="36" Height="36" CornerRadius="18" 
+                                Margin="0,0,10,0"
+                                Padding="0"
+                                VerticalAlignment="Center">
+                            <Button.Background>
+                                <SolidColorBrush Color="#22FFFFFF"/>
+                            </Button.Background>
+                            <TextBlock Text="📎" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="16"/>
+                        </Button>
+
+                        <Border Grid.Column="1" CornerRadius="18" BorderThickness="1" Margin="0,0,15,0" MinHeight="36" VerticalAlignment="Center">
                             <Border.BorderBrush>
                                 <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
                                     <GradientStop Color="#00B4D8" Offset="0"/>
@@ -498,7 +598,7 @@ limitations under the License.
                                      ScrollViewer.VerticalScrollBarVisibility="Auto"/>
                         </Border>
                         
-                        <Button Grid.Column="1" Command="{Binding SendMessageCommand}" IsEnabled="{Binding CanSendPrompt}" Width="80" Height="36" CornerRadius="18" VerticalAlignment="Center">
+                        <Button Grid.Column="2" Command="{Binding SendMessageCommand}" IsEnabled="{Binding CanSendPrompt}" Width="80" Height="36" CornerRadius="18" VerticalAlignment="Center">
                             <Button.Background>
                                 <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
                                     <GradientStop Color="#00B4D8" Offset="0"/>
@@ -511,5 +611,94 @@ limitations under the License.
                 </StackPanel>
             </Grid>
         </Border>
+
+        <!-- Settings Overlay Modal -->
+        <Grid Grid.Column="0" Grid.ColumnSpan="2" Background="#A008080C" IsVisible="{Binding IsSettingsOpen}" ZIndex="999">
+            <!-- Modal Background Click to Close -->
+            <Border Background="Transparent" PointerPressed="SettingsAdorner_PointerPressed" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+            
+            <Border CornerRadius="16" Background="#161622" BorderBrush="#2A2A3C" BorderThickness="1" 
+                    Width="380" Height="340" 
+                    VerticalAlignment="Center" HorizontalAlignment="Center"
+                    BoxShadow="0 8 32 rgba(0, 0, 0, 0.5)">
+                <Grid RowDefinitions="Auto, *, Auto" Margin="25">
+                    
+                    <!-- Modal Header -->
+                    <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,20">
+                        <TextBlock Grid.Column="0" Text="{Binding SettingsTitle}" Foreground="White" FontSize="20" FontWeight="Bold" VerticalAlignment="Center"/>
+                        <Button Grid.Column="1" Command="{Binding CloseSettingsCommand}" Background="Transparent" BorderThickness="0" Padding="5" Cursor="Hand">
+                            <TextBlock Text="×" FontSize="22" Foreground="#808090" FontWeight="Bold"/>
+                        </Button>
+                    </Grid>
+                    
+                    <!-- Modal Content -->
+                    <StackPanel Grid.Row="1" Spacing="20" VerticalAlignment="Center">
+                        <!-- Language Setting -->
+                        <Grid ColumnDefinitions="*, Auto">
+                            <TextBlock Grid.Column="0" Text="{Binding LanguageLabel}" Foreground="#D0D0E0" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                            <Border Grid.Column="1" Background="#101018" CornerRadius="8" Padding="2">
+                                <StackPanel Orientation="Horizontal" Spacing="4">
+                                    <Button Click="LanguageButton_Click" Tag="tr"
+                                            Width="48" Height="30" Padding="0" CornerRadius="6"
+                                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                            Cursor="Hand">
+                                        <Button.Styles>
+                                            <Style Selector="Button">
+                                                <Setter Property="Background" Value="{Binding CurrentLanguage, Converter={StaticResource LanguageBackgroundConverter}, ConverterParameter=tr}"/>
+                                                <Setter Property="Foreground" Value="{Binding CurrentLanguage, Converter={StaticResource LanguageForegroundConverter}, ConverterParameter=tr}"/>
+                                            </Style>
+                                        </Button.Styles>
+                                        <TextBlock Text="TR" FontSize="12" FontWeight="Bold"/>
+                                    </Button>
+                                    <Button Click="LanguageButton_Click" Tag="en"
+                                            Width="48" Height="30" Padding="0" CornerRadius="6"
+                                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                            Cursor="Hand">
+                                        <Button.Styles>
+                                            <Style Selector="Button">
+                                                <Setter Property="Background" Value="{Binding CurrentLanguage, Converter={StaticResource LanguageBackgroundConverter}, ConverterParameter=en}"/>
+                                                <Setter Property="Foreground" Value="{Binding CurrentLanguage, Converter={StaticResource LanguageForegroundConverter}, ConverterParameter=en}"/>
+                                            </Style>
+                                        </Button.Styles>
+                                        <TextBlock Text="EN" FontSize="12" FontWeight="Bold"/>
+                                    </Button>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                        
+                        <!-- Auto Scroll Toggle -->
+                        <Grid ColumnDefinitions="*, Auto">
+                            <TextBlock Grid.Column="0" Text="{Binding AutoScrollLabel}" Foreground="#D0D0E0" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,10,0"/>
+                            <ToggleSwitch Grid.Column="1" IsChecked="{Binding AutoScrollEnabled}" 
+                                          OnContent="" OffContent="" 
+                                          MinWidth="0" Margin="0" VerticalAlignment="Center"/>
+                        </Grid>
+
+                        <!-- About / Attribution -->
+                        <Border BorderBrush="#15FFFFFF" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,10,0,0">
+                            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
+                                <TextBlock Text="IronPrompt v1.1.0 • Built with" Foreground="#808090" FontSize="11"/>
+                                <TextBlock Text="Avalonia UI" Foreground="#00B4D8" FontSize="11" FontWeight="SemiBold"/>
+                                <TextBlock Text="(MIT License)" Foreground="#808090" FontSize="11"/>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                    
+                    <!-- Modal Footer -->
+                    <Button Grid.Row="2" Command="{Binding CloseSettingsCommand}" 
+                            HorizontalAlignment="Stretch" Height="38" CornerRadius="8"
+                            Cursor="Hand">
+                        <Button.Background>
+                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                                <GradientStop Color="#00B4D8" Offset="0"/>
+                                <GradientStop Color="#9D4EDD" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Button.Background>
+                        <TextBlock Text="{Binding CloseButton}" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="14"/>
+                    </Button>
+                    
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </Window>

@@ -135,4 +135,31 @@ namespace IronPrompt.Converters
             throw new NotImplementedException();
         }
     }
+
+    public class PathToBitmapConverter : IValueConverter
+    {
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            if (value is string path && !string.IsNullOrEmpty(path))
+            {
+                try
+                {
+                    if (System.IO.File.Exists(path))
+                    {
+                        return new Avalonia.Media.Imaging.Bitmap(path);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Failed to load bitmap: {ex.Message}");
+                }
+            }
+            return null;
+        }
+
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }

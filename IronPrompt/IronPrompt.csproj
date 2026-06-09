@@ -9,15 +9,15 @@
     <ApplicationIcon>Assets\appicon.ico</ApplicationIcon>
 
     <!-- Assembly Metadata -->
-    <Version>1.0.1</Version>
-    <AssemblyVersion>1.0.1.0</AssemblyVersion>
-    <FileVersion>1.0.1.0</FileVersion>
+    <Version>1.1.0</Version>
+    <AssemblyVersion>1.1.0.0</AssemblyVersion>
+    <FileVersion>1.1.0.0</FileVersion>
     <Title>IronPrompt</Title>
     <Product>IronPrompt</Product>
     <Description>A sleek, state-of-the-art desktop client for local Ollama LLMs.</Description>
-    <Company>Arda Ceylan</Company>
-    <Authors>Arda Ceylan</Authors>
-    <Copyright>Copyright © 2026 Arda Ceylan. All rights reserved.</Copyright>
+    <Company>Weilan</Company>
+    <Authors>Weilan</Authors>
+    <Copyright>Copyright © 2026 Weilan. All rights reserved.</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/arda-ceylan/IronPrompt</RepositoryUrl>
   </PropertyGroup>
@@ -35,14 +35,14 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Avalonia" Version="12.0.3" />
-    <PackageReference Include="Avalonia.Desktop" Version="12.0.3" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.3" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.0.3" />
-    <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.1">
+    <PackageReference Include="Avalonia" Version="12.0.4" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.0.4" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.4" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.0.4" />
+    <PackageReference Include="AvaloniaUI.DiagnosticsSupport" Version="2.2.2">
       <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.1" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
   </ItemGroup>
 </Project>

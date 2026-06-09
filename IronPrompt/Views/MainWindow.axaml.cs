@@ -17,6 +17,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using IronPrompt.ViewModels;
 
 namespace IronPrompt.Views
@@ -52,6 +53,9 @@ namespace IronPrompt.Views
                     UpdateSession(vm.SelectedSession);
                 }
             };
+
+            AddHandler(DragDrop.DragOverEvent, DragOver);
+            AddHandler(DragDrop.DropEvent, Drop);
         }
 
         protected override void OnOpened(System.EventArgs e)
@@ -163,6 +167,7 @@ namespace IronPrompt.Views
                         if (DataContext is MainWindowViewModel vm && !string.IsNullOrEmpty(settings.Language))
                         {
                             vm.CurrentLanguage = settings.Language;
+                            vm.AutoScrollEnabled = settings.AutoScrollEnabled;
                         }
                     }
                 }
@@ -193,6 +198,7 @@ namespace IronPrompt.Views
                 if (DataContext is MainWindowViewModel vm)
                 {
                     settings.Language = vm.CurrentLanguage;
+                    settings.AutoScrollEnabled = vm.AutoScrollEnabled;
                 }
 
                 var json = System.Text.Json.JsonSerializer.Serialize(settings, IronPrompt.Models.OllamaJsonContext.Default.WindowSettingsData);
@@ -209,7 +215,7 @@ namespace IronPrompt.Views
             if (e.HeightChanged && sender is Control control)
             {
                 var scrollViewer = control.Parent as ScrollViewer;
-                if (DataContext is MainWindowViewModel vm && vm.IsGenerating)
+                if (DataContext is MainWindowViewModel vm && vm.IsGenerating && vm.AutoScrollEnabled)
                 {
                     scrollViewer?.ScrollToEnd();
                 }
@@ -234,6 +240,120 @@ namespace IronPrompt.Views
                     }
                 }
             }
+            else if (e.Key == Key.V && e.KeyModifiers.HasFlag(KeyModifiers.Control))
+            {
+                if (DataContext is MainWindowViewModel vm)
+                {
+                    _ = TryPasteImageFromClipboardAsync(vm);
+                }
+            }
+        }
+
+        private async System.Threading.Tasks.Task TryPasteImageFromClipboardAsync(MainWindowViewModel vm)
+        {
+            try
+            {
+                var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+                if (clipboard != null)
+                {
+                    var bitmap = await clipboard.TryGetBitmapAsync();
+                    if (bitmap != null)
+                    {
+                        using var ms = new System.IO.MemoryStream();
+                        bitmap.Save(ms);
+                        byte[] bytes = ms.ToArray();
+                        await vm.TryAddPendingImage("clipboard.png", bytes);
+                        return;
+                    }
+
+                    var files = await clipboard.TryGetFilesAsync();
+                    if (files != null)
+                    {
+                        foreach (var file in files)
+                        {
+                            var localPath = file.Path.LocalPath;
+                            if (IsImageFile(localPath))
+                            {
+                                await vm.TryAddPendingImage(localPath);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Clipboard paste error: {ex.Message}");
+            }
+        }
+
+        public async void AttachImageButton_Click(object? sender, RoutedEventArgs e)
+        {
+            if (DataContext is MainWindowViewModel vm)
+            {
+                var topLevel = TopLevel.GetTopLevel(this);
+                if (topLevel != null)
+                {
+                    var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+                    {
+                        Title = vm.CurrentLanguage == "tr" ? "Görsel Seç" : "Select Image",
+                        AllowMultiple = true,
+                        FileTypeFilter = new[]
+                        {
+                            new FilePickerFileType(vm.CurrentLanguage == "tr" ? "Görseller" : "Images")
+                            {
+                                Patterns = new[] { "*.png", "*.jpg", "*.jpeg", "*.bmp", "*.gif", "*.webp" }
+                            }
+                        }
+                    });
+
+                    if (files != null)
+                    {
+                        foreach (var file in files)
+                        {
+                            var path = file.Path.LocalPath;
+                            await vm.TryAddPendingImage(path);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void DragOver(object? sender, DragEventArgs e)
+        {
+            var files = e.DataTransfer.TryGetFiles();
+            if (DataContext is MainWindowViewModel vm && files != null && System.Linq.Enumerable.Any(files))
+            {
+                e.DragEffects = DragDropEffects.Copy;
+            }
+            else
+            {
+                e.DragEffects = DragDropEffects.None;
+            }
+        }
+
+        private void Drop(object? sender, DragEventArgs e)
+        {
+            if (DataContext is MainWindowViewModel vm)
+            {
+                var files = e.DataTransfer.TryGetFiles();
+                if (files != null)
+                {
+                    foreach (var file in files)
+                    {
+                        var localPath = file.Path.LocalPath;
+                        if (IsImageFile(localPath))
+                        {
+                            _ = vm.TryAddPendingImage(localPath);
+                        }
+                    }
+                }
+            }
+        }
+
+        private bool IsImageFile(string path)
+        {
+            var ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
+            return ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".gif" || ext == ".bmp" || ext == ".webp";
         }
 
         public async void CopyCodeButton_Click(object? sender, RoutedEventArgs e)
@@ -282,6 +402,14 @@ namespace IronPrompt.Views
                 {
                     vm.CurrentLanguage = languageCode;
                 }
+            }
+        }
+
+        private void SettingsAdorner_PointerPressed(object? sender, PointerPressedEventArgs e)
+        {
+            if (DataContext is MainWindowViewModel vm)
+            {
+                vm.IsSettingsOpen = false;
             }
         }
     }

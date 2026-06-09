@@ -14,13 +14,14 @@ It is fully optimized for **.NET 10** and built from the ground up to support **
 ## Key Features
 
 *   **Premium Glassmorphism UI**: Harmony-driven dark mode color palette (`#101018` base) styled with smooth gradient buttons, semi-transparent panels, and subtle micro-animations.
-*   **Dynamic Localization (TR / EN)**: Hot-swappable language support in Turkish and English via a custom segmented toggle at the bottom of the sidebar. All static texts, placeholders, and error dialogs translate instantly without app restarts.
-*   **Advanced Markdown Parsing**: Renders headers, lists, bullet points, horizontal dividers, inline code blocks, and bold/italic styles natively.
-*   **Rich Interactive Tables**: Beautifully structured grid-based markdown table viewer featuring alternate-row tinting and auto-scaling columns.
-*   **Smart Code Blocks**: High-tech syntax highlighting wrapper with a one-click copy button and smooth horizontal scrolling.
-*   **Thinking Process Visualization**: Specialized glows and visual steps representing deep-thinking states (e.g. `<think>` blocks in reasoning models), keeping track of active thoughts vs completed responses.
-*   **Ollama Chat Integration**: Full-duplex streaming API support over local endpoints (`http://localhost:11434/api/chat`).
-*   **Session & Boundaries Persistence**: Remembers window bounds (Width, Height, position coordinates, and WindowState), language selection, scroll positions, and chat history.
+*   **Hot-Swappable Localization (TR / EN)**: Dynamic Turkish and English support. All static texts, placeholders, and error messages translate instantly without application restarts.
+*   **Image Attachment & Vision Support**: Add images to your chat sessions via drag-and-drop, clipboard pasting (`Ctrl+V`), or open file picker. Uses connection-aware lazy capability checking to verify model compatibility.
+*   **Modern Settings Modal**: An overlay modal for configuring application language and toggling the auto-scroll behavior (to control whether the chat automatically scrolls down as responses stream in).
+*   **Intelligent Connection Monitoring**: A background connection loop that detects when Ollama is offline, locks the UI with a red warning banner, and seamlessly updates capabilities once connection is restored.
+*   **Advanced Markdown & Tables**: Renders headers, lists, bold/italic, inline code blocks, and interactive markdown tables natively with auto-scaling columns.
+*   **Smart Code Blocks**: Syntax highlighting wrapper featuring a one-click copy button and horizontal scrolling.
+*   **Thinking Process Visualization**: Specialized styling and visual steps representing deep-thinking states (e.g. `<think>` blocks in reasoning models) with active/completed states.
+*   **Session & Boundaries Persistence**: Remembers window dimensions, position, maximized/minimized state, scroll offsets, active model choice, and session history.
 
 ---
 

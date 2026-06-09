@@ -75,6 +75,7 @@ public partial class ChatMessageViewModel : ObservableObject
     private bool _isWaiting;
 
     public ObservableCollection<MessagePartViewModel> Parts { get; } = new();
+    public ObservableCollection<string> ImagePaths { get; } = new();
 
     private StringBuilder _rawAccumulator = new();
     private StringBuilder _thinkingAccumulator = new();
@@ -431,12 +432,17 @@ public partial class ChatSessionViewModel : ObservableObject
 
         foreach (var msg in this.Messages)
         {
-            data.Messages.Add(new ChatMessageData
+            var msgData = new ChatMessageData
             {
                 SenderName = msg.SenderName,
                 IsUser = msg.IsUser,
                 RawContent = msg.GetRawContent()
-            });
+            };
+            foreach (var path in msg.ImagePaths)
+            {
+                msgData.ImagePaths.Add(path);
+            }
+            data.Messages.Add(msgData);
         }
 
         return data;
@@ -491,6 +497,12 @@ public partial class MainWindowViewModel : ObservableObject
         OnPropertyChanged(nameof(KopyalandiText));
         OnPropertyChanged(nameof(KodBloguHeader));
         OnPropertyChanged(nameof(OllamaOfflineWarning));
+        OnPropertyChanged(nameof(ImageAttachTooltip));
+        OnPropertyChanged(nameof(SettingsTitle));
+        OnPropertyChanged(nameof(AutoScrollLabel));
+        OnPropertyChanged(nameof(LanguageLabel));
+        OnPropertyChanged(nameof(CloseButton));
+        OnPropertyChanged(nameof(ModelVisionWarningText));
         
         if (SelectedSession != null && SelectedSession.Id == "loading")
         {
@@ -516,6 +528,93 @@ public partial class MainWindowViewModel : ObservableObject
     public string OllamaOfflineWarning => CurrentLanguage == "tr" 
         ? "Ollama çalışmıyor! Lütfen arka planda Ollama uygulamasını başlatın..." 
         : "Ollama is not running! Please start the Ollama application in the background...";
+    public string ImageAttachTooltip => CurrentLanguage == "tr"
+        ? "Görsel Ekle (Pano Ctrl+V / Sürükle Bırak)"
+        : "Attach Image (Clipboard Ctrl+V / Drag & Drop)";
+
+    public string SettingsTitle => CurrentLanguage == "tr" ? "Ayarlar" : "Settings";
+    public string AutoScrollLabel => CurrentLanguage == "tr" ? "Modelden cevap geldikçe aşağı kaydır" : "Scroll down as model answers";
+    public string LanguageLabel => CurrentLanguage == "tr" ? "Dil Seçimi:" : "Language Selection:";
+    public string CloseButton => CurrentLanguage == "tr" ? "Kapat" : "Close";
+
+    [ObservableProperty]
+    private bool _isModelVisionCompatible = true;
+
+    partial void OnIsModelVisionCompatibleChanged(bool value)
+    {
+        OnPropertyChanged(nameof(IsAttachmentEnabled));
+    }
+
+    [ObservableProperty]
+    private bool _showModelVisionWarning;
+
+    public string ModelVisionWarningText => CurrentLanguage == "tr"
+        ? "Seçili model görsel girdisini desteklememektedir!"
+        : "The selected model does not support image input!";
+
+    private System.Threading.CancellationTokenSource? _warningCts;
+
+    private void ShowVisionWarning()
+    {
+        Avalonia.Threading.Dispatcher.UIThread.Post(() =>
+        {
+            ShowModelVisionWarning = true;
+        });
+
+        _warningCts?.Cancel();
+        _warningCts = new System.Threading.CancellationTokenSource();
+        var token = _warningCts.Token;
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(5000, token);
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    ShowModelVisionWarning = false;
+                });
+            }
+            catch (TaskCanceledException) { }
+        }, token);
+    }
+
+    [ObservableProperty]
+    private bool _isSettingsOpen;
+
+    [ObservableProperty]
+    private bool _autoScrollEnabled = true;
+
+    public ObservableCollection<string> PendingImagePaths { get; } = new();
+
+    [RelayCommand]
+    private void RemovePendingImage(string path)
+    {
+        try
+        {
+            if (File.Exists(path))
+            {
+                File.Delete(path);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Görsel temizleme hatası: {ex.Message}");
+        }
+        PendingImagePaths.Remove(path);
+    }
+
+    [RelayCommand]
+    private void OpenSettings()
+    {
+        IsSettingsOpen = true;
+    }
+
+    [RelayCommand]
+    private void CloseSettings()
+    {
+        IsSettingsOpen = false;
+    }
 
     [ObservableProperty]
     private bool _isOllamaOnline = true;
@@ -523,19 +622,79 @@ public partial class MainWindowViewModel : ObservableObject
     partial void OnIsOllamaOnlineChanged(bool value)
     {
         OnPropertyChanged(nameof(CanSendPrompt));
+        OnPropertyChanged(nameof(IsAttachmentEnabled));
     }
 
     partial void OnIsGeneratingChanged(bool value)
     {
         OnPropertyChanged(nameof(CanSendPrompt));
+        OnPropertyChanged(nameof(IsAttachmentEnabled));
     }
 
     public bool CanSendPrompt => IsOllamaOnline && !IsGenerating;
+
+    public bool IsAttachmentEnabled => IsModelVisionCompatible && CanSendPrompt;
 
     public ObservableCollection<ChatSessionViewModel> Sessions { get; } = new();
 
     [ObservableProperty]
     private ChatSessionViewModel? _selectedSession;
+
+    public async Task<bool> TryAddPendingImage(string sourcePathOrBytes, byte[]? bytes = null)
+    {
+        var modelName = string.IsNullOrWhiteSpace(SelectedSession?.Subtitle) ? "gemma4:e4b" : SelectedSession.Subtitle;
+        
+        bool isOnline = false;
+        try
+        {
+            using var response = await _httpClient.GetAsync("http://localhost:11434/");
+            isOnline = response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.OK;
+        }
+        catch
+        {
+            isOnline = false;
+        }
+
+        if (!isOnline)
+        {
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                IsOllamaOnline = false;
+            });
+            await StartOllamaConnectionCheck();
+        }
+
+        await CheckModelVisionCapability(modelName);
+
+        if (!IsModelVisionCompatible)
+        {
+            ShowVisionWarning();
+            return false;
+        }
+
+        AddPendingImage(sourcePathOrBytes, bytes);
+        return true;
+    }
+
+    partial void OnSelectedSessionChanged(ChatSessionViewModel? oldValue, ChatSessionViewModel? newValue)
+    {
+        if (oldValue != null)
+        {
+            oldValue.PropertyChanged -= SelectedSession_PropertyChanged;
+        }
+        if (newValue != null)
+        {
+            newValue.PropertyChanged += SelectedSession_PropertyChanged;
+        }
+        else
+        {
+            IsModelVisionCompatible = true;
+        }
+    }
+
+    private void SelectedSession_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+    }
 
     [ObservableProperty]
     private string _inputText = string.Empty;
@@ -551,32 +710,150 @@ public partial class MainWindowViewModel : ObservableObject
         "Sessions"
     );
 
+    private readonly string _imagesPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), 
+        "IronPrompt", 
+        "Images"
+    );
+
+    public string AddPendingImage(string sourcePathOrBytes, byte[]? bytes = null)
+    {
+        try
+        {
+            if (!Directory.Exists(_imagesPath))
+            {
+                Directory.CreateDirectory(_imagesPath);
+            }
+            string extension = ".png";
+            if (bytes == null)
+            {
+                extension = Path.GetExtension(sourcePathOrBytes);
+                if (string.IsNullOrEmpty(extension)) extension = ".png";
+            }
+            string destPath = Path.Combine(_imagesPath, $"{Guid.NewGuid()}{extension}");
+            if (bytes != null)
+            {
+                File.WriteAllBytes(destPath, bytes);
+            }
+            else
+            {
+                File.Copy(sourcePathOrBytes, destPath, true);
+            }
+            PendingImagePaths.Add(destPath);
+            return destPath;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Görsel ekleme hatası: {ex.Message}");
+            return string.Empty;
+        }
+    }
+
+    public async Task CheckModelVisionCapability(string modelName)
+    {
+        if (string.IsNullOrEmpty(modelName))
+        {
+            IsModelVisionCompatible = false;
+            return;
+        }
+
+        try
+        {
+            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+            string payload = $"{{\"name\":\"{modelName}\"}}";
+            using var content = new StringContent(payload, Encoding.UTF8, "application/json");
+            using var response = await client.PostAsync("http://localhost:11434/api/show", content);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                string json = await response.Content.ReadAsStringAsync();
+                var showResponse = JsonSerializer.Deserialize(json, OllamaJsonContext.Default.OllamaShowResponse);
+                
+                bool hasVision = false;
+                if (showResponse?.Capabilities != null)
+                {
+                    foreach (var cap in showResponse.Capabilities)
+                    {
+                        if (cap.Equals("vision", StringComparison.OrdinalIgnoreCase))
+                        {
+                            hasVision = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!hasVision && showResponse?.Details?.Families != null)
+                {
+                    foreach (var fam in showResponse.Details.Families)
+                    {
+                        if (fam.Equals("clip", StringComparison.OrdinalIgnoreCase))
+                        {
+                            hasVision = true;
+                            break;
+                        }
+                    }
+                }
+                
+                IsModelVisionCompatible = hasVision;
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Vision kontrol hatası: {ex.Message}");
+        }
+
+        IsModelVisionCompatible = false;
+    }
+
     private static readonly HttpClient _httpClient = new HttpClient { Timeout = TimeSpan.FromMilliseconds(800) };
+
+    private Task? _connectionCheckTask = null;
 
     private async Task StartOllamaConnectionCheck()
     {
-        while (true)
+        if (_connectionCheckTask == null)
         {
-            bool isOnline = false;
-            try
+            _connectionCheckTask = RunConnectionCheckLoop();
+        }
+        await _connectionCheckTask;
+    }
+
+    private async Task RunConnectionCheckLoop()
+    {
+        try
+        {
+            while (true)
             {
-                using var response = await _httpClient.GetAsync("http://localhost:11434/");
-                isOnline = response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.OK;
+                bool isOnline = false;
+                try
+                {
+                    using var response = await _httpClient.GetAsync("http://localhost:11434/");
+                    isOnline = response.IsSuccessStatusCode || response.StatusCode == System.Net.HttpStatusCode.OK;
+                }
+                catch
+                {
+                    isOnline = false;
+                }
+
+                // Update on UI thread
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    IsOllamaOnline = isOnline;
+                });
+
+                if (isOnline) break;
+
+                await Task.Delay(1500);
             }
-            catch
-            {
-                isOnline = false;
-            }
 
-            // Update on UI thread
-            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
-            {
-                IsOllamaOnline = isOnline;
-            });
-
-            if (isOnline) break;
-
-            await Task.Delay(1500);
+            // Connection is established. Silently update capability checking.
+            var modelName = string.IsNullOrWhiteSpace(SelectedSession?.Subtitle) ? "gemma4:e4b" : SelectedSession.Subtitle;
+            await CheckModelVisionCapability(modelName);
+        }
+        finally
+        {
+            _connectionCheckTask = null;
         }
     }
 
@@ -628,6 +905,48 @@ public partial class MainWindowViewModel : ObservableObject
                 }
             }
 
+            // Cleanup orphaned image files
+            _ = Task.Run(() =>
+            {
+                try
+                {
+                    if (Directory.Exists(_imagesPath))
+                    {
+                        var referencedImages = new System.Collections.Generic.HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                        foreach (var session in loadedSessions)
+                        {
+                            foreach (var msg in session.Messages)
+                            {
+                                foreach (var imgPath in msg.ImagePaths)
+                                {
+                                    referencedImages.Add(imgPath);
+                                }
+                            }
+                        }
+
+                        var imageFiles = Directory.GetFiles(_imagesPath);
+                        foreach (var file in imageFiles)
+                        {
+                            if (!referencedImages.Contains(file))
+                            {
+                                try
+                                {
+                                    File.Delete(file);
+                                }
+                                catch (Exception ex)
+                                {
+                                    System.Diagnostics.Debug.WriteLine($"Orphaned file deletion failed: {ex.Message}");
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Orphaned images cleanup error: {ex.Message}");
+                }
+            });
+
             await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
             {
                 Sessions.Clear();
@@ -678,6 +997,13 @@ public partial class MainWindowViewModel : ObservableObject
                 IsWaiting = false
             };
             msgVm.SetRawContent(msg.RawContent);
+            if (msg.ImagePaths != null)
+            {
+                foreach (var path in msg.ImagePaths)
+                {
+                    msgVm.ImagePaths.Add(path);
+                }
+            }
             vm.Messages.Add(msgVm);
         }
 
@@ -724,15 +1050,30 @@ public partial class MainWindowViewModel : ObservableObject
         await StartOllamaConnectionCheck();
         if (string.IsNullOrWhiteSpace(InputText) || SelectedSession == null || IsGenerating || !IsOllamaOnline) return;
 
+        var modelName = string.IsNullOrWhiteSpace(SelectedSession.Subtitle) ? "gemma4:e4b" : SelectedSession.Subtitle;
+
+        if (PendingImagePaths.Count > 0)
+        {
+            await CheckModelVisionCapability(modelName);
+            if (!IsModelVisionCompatible)
+            {
+                ShowVisionWarning();
+                return;
+            }
+        }
+
         var prompt = InputText;
         InputText = string.Empty;
-
-        var modelName = string.IsNullOrWhiteSpace(SelectedSession.Subtitle) ? "gemma4:e4b" : SelectedSession.Subtitle;
 
         var senderName = CurrentLanguage == "tr" ? "Sen" : "You";
         var userMessage = new ChatMessageViewModel { SenderName = senderName, IsUser = true, IsWaiting = false };
         userMessage.AppendAndParse(prompt);
+        foreach (var imgPath in PendingImagePaths)
+        {
+            userMessage.ImagePaths.Add(imgPath);
+        }
         SelectedSession.Messages.Add(userMessage);
+        PendingImagePaths.Clear();
 
         var gemmaMessage = new ChatMessageViewModel { SenderName = modelName, IsUser = false, IsWaiting = true };
         SelectedSession.Messages.Add(gemmaMessage);
@@ -759,11 +1100,34 @@ public partial class MainWindowViewModel : ObservableObject
                     content = $"<think>\n{msg.ThinkingText}\n</think>\n{content}";
                 }
 
-                requestData.Messages.Add(new OllamaChatMessage
+                var ollamaMsg = new OllamaChatMessage
                 {
                     Role = msg.IsUser ? "user" : "assistant",
                     Content = content
-                });
+                };
+
+                if (msg.ImagePaths.Count > 0)
+                {
+                    ollamaMsg.Images = new System.Collections.Generic.List<string>();
+                    foreach (var path in msg.ImagePaths)
+                    {
+                        try
+                        {
+                            if (File.Exists(path))
+                            {
+                                byte[] bytes = File.ReadAllBytes(path);
+                                string base64 = Convert.ToBase64String(bytes);
+                                ollamaMsg.Images.Add(base64);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"Base64 conversion failed: {ex.Message}");
+                        }
+                    }
+                }
+
+                requestData.Messages.Add(ollamaMsg);
             }
 
             var jsonContent = new StringContent(
@@ -828,6 +1192,17 @@ public partial class MainWindowViewModel : ObservableObject
         {
             try
             {
+                foreach (var msg in session.Messages)
+                {
+                    foreach (var path in msg.ImagePaths)
+                    {
+                        if (File.Exists(path))
+                        {
+                            File.Delete(path);
+                        }
+                    }
+                }
+
                 var filePath = Path.Combine(_storagePath, $"{session.Id}.json");
                 if (File.Exists(filePath))
                 {

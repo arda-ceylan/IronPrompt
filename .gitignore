@@ -361,3 +361,13 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# MSIX Packaging Script
+build_msix.ps1
+
+# Microsoft Store Asset Images
+**/Assets/StoreLogo.png
+**/Assets/Square150x150Logo.png
+**/Assets/Square44x44Logo.png
+**/Assets/Wide310x150Logo.png
+**/Assets/SplashScreen.png

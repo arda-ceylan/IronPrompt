@@ -77,7 +77,7 @@ namespace IronPrompt.Converters
             {
                 if (string.IsNullOrEmpty(segment)) continue;
 
-                if (segment.StartsWith("**") && segment.EndsWith("**"))
+                if (segment.StartsWith("**") && segment.EndsWith("**") && segment.Length >= 4)
                 {
                     var boldText = segment.Substring(2, segment.Length - 4);
                     textBlock.Inlines.Add(new Run(boldText)
@@ -85,7 +85,7 @@ namespace IronPrompt.Converters
                         FontWeight = FontWeight.Bold
                     });
                 }
-                else if (segment.StartsWith("*") && segment.EndsWith("*"))
+                else if (segment.StartsWith("*") && segment.EndsWith("*") && segment.Length >= 2)
                 {
                     var italicText = segment.Substring(1, segment.Length - 2);
                     textBlock.Inlines.Add(new Run(italicText)
@@ -93,7 +93,7 @@ namespace IronPrompt.Converters
                         FontStyle = FontStyle.Italic
                     });
                 }
-                else if (segment.StartsWith("`") && segment.EndsWith("`"))
+                else if (segment.StartsWith("`") && segment.EndsWith("`") && segment.Length >= 2)
                 {
                     var codeText = segment.Substring(1, segment.Length - 2);
                     textBlock.Inlines.Add(new Run(codeText)

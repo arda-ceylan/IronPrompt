@@ -56,6 +56,9 @@ namespace IronPrompt.Models
 
         [JsonPropertyName("rawContent")]
         public string RawContent { get; set; } = string.Empty;
+
+        [JsonPropertyName("imagePaths")]
+        public System.Collections.Generic.List<string> ImagePaths { get; set; } = new();
     }
 
     public class ChatSessionData
@@ -95,6 +98,9 @@ namespace IronPrompt.Models
 
         [JsonPropertyName("language")]
         public string Language { get; set; } = "tr";
+
+        [JsonPropertyName("autoScrollEnabled")]
+        public bool AutoScrollEnabled { get; set; } = true;
     }
 
     public class OllamaChatMessage
@@ -107,6 +113,9 @@ namespace IronPrompt.Models
 
         [JsonPropertyName("thinking")]
         public string Thinking { get; set; } = string.Empty;
+
+        [JsonPropertyName("images")]
+        public System.Collections.Generic.List<string>? Images { get; set; }
     }
 
     public class OllamaChatRequest
@@ -133,6 +142,21 @@ namespace IronPrompt.Models
         public bool Done { get; set; }
     }
 
+    public class OllamaShowResponse
+    {
+        [JsonPropertyName("details")]
+        public OllamaShowDetails? Details { get; set; }
+
+        [JsonPropertyName("capabilities")]
+        public System.Collections.Generic.List<string>? Capabilities { get; set; }
+    }
+
+    public class OllamaShowDetails
+    {
+        [JsonPropertyName("families")]
+        public System.Collections.Generic.List<string>? Families { get; set; }
+    }
+
     [JsonSerializable(typeof(OllamaRequest))]
     [JsonSerializable(typeof(OllamaResponseChunk))]
     [JsonSerializable(typeof(ChatSessionData))]
@@ -144,6 +168,9 @@ namespace IronPrompt.Models
     [JsonSerializable(typeof(System.Collections.Generic.List<ChatSessionData>))]
     [JsonSerializable(typeof(System.Collections.Generic.List<ChatMessageData>))]
     [JsonSerializable(typeof(System.Collections.Generic.List<OllamaChatMessage>))]
+    [JsonSerializable(typeof(System.Collections.Generic.List<string>))]
+    [JsonSerializable(typeof(OllamaShowResponse))]
+    [JsonSerializable(typeof(OllamaShowDetails))]
     public partial class OllamaJsonContext : JsonSerializerContext
     {
     }
