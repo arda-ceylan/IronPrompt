@@ -371,3 +371,6 @@ build_msix.ps1
 **/Assets/Square44x44Logo.png
 **/Assets/Wide310x150Logo.png
 **/Assets/SplashScreen.png
+
+# Main appicon file
+appicon.png
