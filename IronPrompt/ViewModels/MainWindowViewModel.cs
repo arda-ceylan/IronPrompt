@@ -468,10 +468,12 @@ public partial class ChatSessionViewModel : ObservableObject
 
 public partial class MainWindowViewModel : ObservableObject
 {
-    public static string CurrentLanguageStatic { get; set; } = "tr";
+    public static string CurrentLanguageStatic { get; set; } = 
+        System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("tr", System.StringComparison.OrdinalIgnoreCase) ? "tr" : "en";
 
     [ObservableProperty]
-    private string _currentLanguage = "tr"; // "tr" or "en"
+    private string _currentLanguage = 
+        System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("tr", System.StringComparison.OrdinalIgnoreCase) ? "tr" : "en"; // "tr" or "en"
 
     partial void OnCurrentLanguageChanged(string value)
     {
@@ -514,14 +516,32 @@ public partial class MainWindowViewModel : ObservableObject
     public string YeniSohbetButton => CurrentLanguage == "tr" ? "Yeni Sohbet" : "New Chat";
     public string YenidenAdlandirMenu => CurrentLanguage == "tr" ? "Yeniden Adlandır" : "Rename";
     public string SohbetiSilMenu => CurrentLanguage == "tr" ? "Sohbeti Sil" : "Delete Chat";
-    public string GemmaSorPlaceholder => CurrentLanguage == "tr" ? "Gemma'ya Sor..." : "Ask Gemma...";
+    public string GemmaSorPlaceholder
+    {
+        get
+        {
+            var modelName = string.IsNullOrWhiteSpace(SelectedSession?.Subtitle) ? "gemma4:e4b" : SelectedSession.Subtitle;
+            return CurrentLanguage == "tr" 
+                ? $"{modelName} modeline sor..." 
+                : $"Ask {modelName}...";
+        }
+    }
     public string GonderButton => CurrentLanguage == "tr" ? "Gönder" : "Send";
     public string SeciliSohbetYok => CurrentLanguage == "tr" ? "Seçili Sohbet Yok" : "No Chat Selected";
     public string ModelLabel => CurrentLanguage == "tr" ? "Model:" : "Model:";
     public string DusunmeSureciHeader => CurrentLanguage == "tr" ? "Düşünme Süreci" : "Thinking Process";
     public string DusunuyorText => CurrentLanguage == "tr" ? "Düşünüyor..." : "Thinking...";
     public string TamamlandiText => CurrentLanguage == "tr" ? "Tamamlandı" : "Completed";
-    public string GemmaYanitHazirliyor => CurrentLanguage == "tr" ? "Gemma yanıt hazırlıyor ve düşünüyor..." : "Gemma is thinking and preparing a response...";
+    public string GemmaYanitHazirliyor
+    {
+        get
+        {
+            var modelName = string.IsNullOrWhiteSpace(SelectedSession?.Subtitle) ? "gemma4:e4b" : SelectedSession.Subtitle;
+            return CurrentLanguage == "tr" 
+                ? $"{modelName} yanıt hazırlıyor ve düşünüyor..." 
+                : $"{modelName} is thinking and preparing a response...";
+        }
+    }
     public string KopyalaText => CurrentLanguage == "tr" ? "Kopyala" : "Copy";
     public string KopyalandiText => CurrentLanguage == "tr" ? "Kopyalandı!" : "Copied!";
     public string KodBloguHeader => CurrentLanguage == "tr" ? "KOD BLOĞU" : "CODE BLOCK";
@@ -690,10 +710,17 @@ public partial class MainWindowViewModel : ObservableObject
         {
             IsModelVisionCompatible = true;
         }
+        OnPropertyChanged(nameof(GemmaSorPlaceholder));
+        OnPropertyChanged(nameof(GemmaYanitHazirliyor));
     }
 
     private void SelectedSession_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(ChatSessionViewModel.Subtitle))
+        {
+            OnPropertyChanged(nameof(GemmaSorPlaceholder));
+            OnPropertyChanged(nameof(GemmaYanitHazirliyor));
+        }
     }
 
     [ObservableProperty]

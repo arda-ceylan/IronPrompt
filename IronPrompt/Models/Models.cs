@@ -97,7 +97,7 @@ namespace IronPrompt.Models
         public int WindowState { get; set; }
 
         [JsonPropertyName("language")]
-        public string Language { get; set; } = "tr";
+        public string Language { get; set; } = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.Equals("tr", System.StringComparison.OrdinalIgnoreCase) ? "tr" : "en";
 
         [JsonPropertyName("autoScrollEnabled")]
         public bool AutoScrollEnabled { get; set; } = true;
