@@ -116,6 +116,6 @@ dotnet publish IronPrompt/IronPrompt.csproj -c Release -r win-x64 --self-contain
 
 ## License
 
-Copyright © 2026 **Arda Ceylan**. All rights reserved.
+Copyright © 2026 **Arda Ceylan**.
 
 Licensed under the **Apache License, Version 2.0**. [LICENSE](LICENSE.txt)
