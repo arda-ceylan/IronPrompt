@@ -17,7 +17,7 @@
     <Description>A sleek, state-of-the-art desktop client for local Ollama LLMs.</Description>
     <Company>Weilan</Company>
     <Authors>Weilan</Authors>
-    <Copyright>Copyright © 2026 Weilan. All rights reserved.</Copyright>
+    <Copyright>Copyright © 2026 Weilan</Copyright>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/arda-ceylan/IronPrompt</RepositoryUrl>
   </PropertyGroup>
