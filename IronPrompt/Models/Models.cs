@@ -157,6 +157,56 @@ namespace IronPrompt.Models
         public System.Collections.Generic.List<string>? Families { get; set; }
     }
 
+    public class OllamaModel
+    {
+        [JsonPropertyName("name")]
+        public string Name { get; set; } = string.Empty;
+
+        [JsonPropertyName("size")]
+        public long Size { get; set; }
+
+        public string SizeFormatted => $"{(double)Size / (1024.0 * 1024.0 * 1024.0):F2} GB";
+    }
+
+    public class OllamaListResponse
+    {
+        [JsonPropertyName("models")]
+        public System.Collections.Generic.List<OllamaModel> Models { get; set; } = new();
+    }
+
+    public class OllamaPullRequest
+    {
+        [JsonPropertyName("name")]
+        public string Name { get; set; } = string.Empty;
+
+        [JsonPropertyName("stream")]
+        public bool Stream { get; set; } = true;
+    }
+
+    public class OllamaPullResponse
+    {
+        [JsonPropertyName("status")]
+        public string Status { get; set; } = string.Empty;
+
+        [JsonPropertyName("digest")]
+        public string Digest { get; set; } = string.Empty;
+
+        [JsonPropertyName("total")]
+        public long? Total { get; set; }
+
+        [JsonPropertyName("completed")]
+        public long? Completed { get; set; }
+
+        [JsonPropertyName("error")]
+        public string Error { get; set; } = string.Empty;
+    }
+
+    public class OllamaDeleteRequest
+    {
+        [JsonPropertyName("name")]
+        public string Name { get; set; } = string.Empty;
+    }
+
     [JsonSerializable(typeof(OllamaRequest))]
     [JsonSerializable(typeof(OllamaResponseChunk))]
     [JsonSerializable(typeof(ChatSessionData))]
@@ -171,6 +221,12 @@ namespace IronPrompt.Models
     [JsonSerializable(typeof(System.Collections.Generic.List<string>))]
     [JsonSerializable(typeof(OllamaShowResponse))]
     [JsonSerializable(typeof(OllamaShowDetails))]
+    [JsonSerializable(typeof(OllamaModel))]
+    [JsonSerializable(typeof(OllamaListResponse))]
+    [JsonSerializable(typeof(OllamaPullRequest))]
+    [JsonSerializable(typeof(OllamaPullResponse))]
+    [JsonSerializable(typeof(OllamaDeleteRequest))]
+    [JsonSerializable(typeof(System.Collections.Generic.List<OllamaModel>))]
     public partial class OllamaJsonContext : JsonSerializerContext
     {
     }

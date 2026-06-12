@@ -16,6 +16,7 @@ limitations under the License.
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:IronPrompt.ViewModels"
+        xmlns:models="using:IronPrompt.Models"
         xmlns:conv="using:IronPrompt.Converters"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
@@ -37,6 +38,9 @@ limitations under the License.
         <conv:LanguageBackgroundConverter x:Key="LanguageBackgroundConverter"/>
         <conv:LanguageForegroundConverter x:Key="LanguageForegroundConverter"/>
         <conv:PathToBitmapConverter x:Key="PathToBitmapConverter"/>
+        <conv:IntToBoolConverter x:Key="IntToBoolConverter"/>
+        <conv:IntToBackgroundConverter x:Key="IntToBackgroundConverter"/>
+        <conv:IntToForegroundConverter x:Key="IntToForegroundConverter"/>
     </Window.Resources>
 
     <Window.Styles>
@@ -248,20 +252,26 @@ limitations under the License.
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" IsVisible="{Binding SelectedSession, Converter={StaticResource NotNullToBoolConverter}}">
                             <Ellipse Width="8" Height="8" Fill="#00B4D8" VerticalAlignment="Center"/>
                             <TextBlock Text="{Binding ModelLabel}" Foreground="#A0A0B0" FontSize="13" VerticalAlignment="Center"/>
-                            <TextBox Classes="model-input"
-                                     Text="{Binding SelectedSession.Subtitle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                     IsEnabled="{Binding CanSendPrompt}"
-                                     PlaceholderText="gemma4:e4b"
-                                     Background="#201F30"
-                                     Foreground="White"
-                                     BorderBrush="#334155"
-                                     BorderThickness="1"
-                                     CornerRadius="6"
-                                     Padding="10,4"
-                                     FontSize="13"
-                                     Width="150"
-                                     VerticalAlignment="Center"
-                                     VerticalContentAlignment="Center"/>
+                            <Button Command="{Binding OpenModelManagerCommand}"
+                                    IsEnabled="{Binding CanSendPrompt}"
+                                    Background="#201F30"
+                                    Foreground="White"
+                                    BorderBrush="#334155"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Padding="10,4"
+                                    Width="150"
+                                    Cursor="Hand"
+                                    VerticalAlignment="Center">
+                                <Button.Styles>
+                                    <Style Selector="Button:pointerover /template/ ContentPresenter">
+                                        <Setter Property="Background" Value="#2A2A40"/>
+                                        <Setter Property="BorderBrush" Value="#00B4D8"/>
+                                        <Setter Property="TextBlock.Foreground" Value="White"/>
+                                    </Style>
+                                </Button.Styles>
+                                <TextBlock Text="{Binding SelectedSession.Subtitle}" FontSize="13" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center"/>
+                            </Button>
                         </StackPanel>
                     </Grid>
                 </Grid>
@@ -634,6 +644,219 @@ limitations under the License.
             </Grid>
         </Border>
 
+        <!-- Model Manager Overlay Modal -->
+        <Grid Grid.Column="0" Grid.ColumnSpan="2" Background="#A008080C" IsVisible="{Binding IsModelManagerOpen}" ZIndex="998">
+            <!-- Modal Background Click to Close -->
+            <Border Background="Transparent" PointerPressed="ModelManagerAdorner_PointerPressed" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
+            
+            <Border CornerRadius="16" Background="#161622" BorderBrush="#2A2A3C" BorderThickness="1" 
+                    Width="480" Height="520" 
+                    VerticalAlignment="Center" HorizontalAlignment="Center"
+                    BoxShadow="0 8 32 rgba(0, 0, 0, 0.5)">
+                <Panel>
+                    <!-- Main Model Manager Content -->
+                    <Grid RowDefinitions="Auto, *, Auto" Margin="25" IsEnabled="{Binding !IsDeleteConfirmationOpen}">
+                        
+                        <!-- Modal Header -->
+                        <Grid Grid.Row="0" ColumnDefinitions="*, Auto" Margin="0,0,0,15">
+                            <TextBlock Grid.Column="0" Text="{Binding ModelYonetimiTitle}" Foreground="White" FontSize="20" FontWeight="Bold" VerticalAlignment="Center"/>
+                            <Button Grid.Column="1" Command="{Binding CloseModelManagerCommand}" Background="Transparent" BorderThickness="0" Padding="5" Cursor="Hand">
+                                <TextBlock Text="×" FontSize="22" Foreground="#808090" FontWeight="Bold"/>
+                            </Button>
+                        </Grid>
+                        
+                        <!-- Tab Header Controls -->
+                        <Grid Grid.Row="1" RowDefinitions="Auto, *" Margin="0,0,0,10">
+                            <Border Grid.Row="0" Margin="0,0,0,15" Background="#101018" CornerRadius="8" Padding="3">
+                                <Grid ColumnDefinitions="*, *">
+                                    <Button Grid.Column="0" Click="ModelTabButton_Click" Tag="0"
+                                            HorizontalAlignment="Stretch" Height="34" CornerRadius="6"
+                                            Cursor="Hand" IsHitTestVisible="{Binding !IsDownloadingModel}">
+                                        <Button.Styles>
+                                            <Style Selector="Button">
+                                                <Setter Property="Background" Value="{Binding SelectedModelTab, Converter={StaticResource IntToBackgroundConverter}, ConverterParameter=0}"/>
+                                                <Setter Property="Foreground" Value="{Binding SelectedModelTab, Converter={StaticResource IntToForegroundConverter}, ConverterParameter=0}"/>
+                                            </Style>
+                                        </Button.Styles>
+                                        <TextBlock Text="{Binding YukluModellerTab}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Button>
+                                    
+                                    <Button Grid.Column="1" Click="ModelTabButton_Click" Tag="1"
+                                            HorizontalAlignment="Stretch" Height="34" CornerRadius="6"
+                                            Cursor="Hand" IsHitTestVisible="{Binding !IsDownloadingModel}">
+                                        <Button.Styles>
+                                            <Style Selector="Button">
+                                                <Setter Property="Background" Value="{Binding SelectedModelTab, Converter={StaticResource IntToBackgroundConverter}, ConverterParameter=1}"/>
+                                                <Setter Property="Foreground" Value="{Binding SelectedModelTab, Converter={StaticResource IntToForegroundConverter}, ConverterParameter=1}"/>
+                                            </Style>
+                                        </Button.Styles>
+                                        <TextBlock Text="{Binding ModelIndirTab}" FontSize="13" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Button>
+                                </Grid>
+                            </Border>
+                            
+                            <!-- Tab Body Content -->
+                            <Grid Grid.Row="1">
+                                <!-- Tab 1: Installed Models -->
+                                <Grid IsVisible="{Binding SelectedModelTab, Converter={StaticResource IntToBoolConverter}, ConverterParameter=0}">
+                                    <ScrollViewer Margin="0,0,0,10">
+                                        <Panel>
+                                            <!-- Model List -->
+                                            <StackPanel Spacing="6" IsVisible="{Binding LocalModels.Count}">
+                                                <ItemsControl ItemsSource="{Binding LocalModels}">
+                                                    <ItemsControl.ItemTemplate>
+                                                        <DataTemplate x:DataType="models:OllamaModel">
+                                                            <Grid ColumnDefinitions="*, Auto" Margin="0,2">
+                                                                <!-- Selection Button -->
+                                                                <Button Grid.Column="0" Command="{Binding $parent[Window].DataContext.SelectModelCommand}" CommandParameter="{Binding Name}"
+                                                                        HorizontalAlignment="Stretch" Background="#1C1B2A" BorderBrush="#2A2A3C" BorderThickness="1"
+                                                                        CornerRadius="8,0,0,8" Padding="12,10" Cursor="Hand">
+                                                                    <Button.Styles>
+                                                                        <Style Selector="Button:pointerover /template/ ContentPresenter">
+                                                                            <Setter Property="Background" Value="#2A2A40"/>
+                                                                            <Setter Property="BorderBrush" Value="#00B4D8"/>
+                                                                        </Style>
+                                                                    </Button.Styles>
+                                                                    <Grid ColumnDefinitions="*, Auto">
+                                                                        <TextBlock Grid.Column="0" Text="{Binding Name}" Foreground="White" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                                                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" Margin="0,0,10,0">
+                                                                            <TextBlock Text="{Binding $parent[Window].DataContext.BoyutLabel}" Foreground="#808090" FontSize="11"/>
+                                                                            <TextBlock Text="{Binding SizeFormatted}" Foreground="#00B4D8" FontSize="11" FontWeight="SemiBold"/>
+                                                                        </StackPanel>
+                                                                    </Grid>
+                                                                </Button>
+                                                                
+                                                                <!-- Delete Button -->
+                                                                <Button Grid.Column="1" Command="{Binding $parent[Window].DataContext.ShowDeleteConfirmationCommand}" CommandParameter="{Binding Name}"
+                                                                        Width="40" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                                                        Background="#1C1B2A" BorderBrush="#2A2A3C" BorderThickness="0,1,1,1"
+                                                                        CornerRadius="0,8,8,0" Padding="0" Cursor="Hand">
+                                                                    <Button.Styles>
+                                                                        <Style Selector="Button:pointerover /template/ ContentPresenter">
+                                                                            <Setter Property="Background" Value="#3D1C2A"/>
+                                                                            <Setter Property="BorderBrush" Value="#FF5555"/>
+                                                                            <Setter Property="TextBlock.Foreground" Value="#FF5555"/>
+                                                                        </Style>
+                                                                    </Button.Styles>
+                                                                    <TextBlock Text="🗑️" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                </Button>
+                                                            </Grid>
+                                                        </DataTemplate>
+                                                    </ItemsControl.ItemTemplate>
+                                                </ItemsControl>
+                                            </StackPanel>
+                                            
+                                            <!-- Empty Placeholder -->
+                                            <TextBlock Text="{Binding ModelBulunamadiMessage}" IsVisible="{Binding !LocalModels.Count}" Foreground="#FF6B6B" FontSize="13" TextWrapping="Wrap" HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Margin="20"/>
+                                        </Panel>
+                                    </ScrollViewer>
+                                </Grid>
+                                
+                                <!-- Tab 2: Download Model -->
+                                <Grid IsVisible="{Binding SelectedModelTab, Converter={StaticResource IntToBoolConverter}, ConverterParameter=1}" RowDefinitions="Auto, *, Auto">
+                                    <!-- Top Input & Tip -->
+                                    <StackPanel Grid.Row="0" Margin="0,10,0,10" Spacing="6">
+                                        <Grid ColumnDefinitions="*, Auto">
+                                            <Border Grid.Column="0" CornerRadius="8" BorderThickness="1" BorderBrush="#334155" Background="#101018" Padding="8,2" Margin="0,0,10,0">
+                                                <TextBox Text="{Binding DownloadModelName, Mode=TwoWay}"
+                                                         IsReadOnly="{Binding IsDownloadingModel}"
+                                                         IsHitTestVisible="{Binding !IsDownloadingModel}"
+                                                         PlaceholderText="{Binding ModelAdiGirinPlaceholder}"
+                                                         Background="Transparent" Foreground="White" BorderThickness="0"
+                                                         FontSize="13" VerticalAlignment="Center" VerticalContentAlignment="Center"/>
+                                            </Border>
+                                            <Button Grid.Column="1" Command="{Binding PullModelCommand}" CommandParameter="{Binding DownloadModelName}" IsHitTestVisible="{Binding !IsDownloadingModel}" Width="90" Height="36" CornerRadius="8">
+                                                <Button.Background>
+                                                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                                                        <GradientStop Color="#00B4D8" Offset="0"/>
+                                                        <GradientStop Color="#9D4EDD" Offset="1"/>
+                                                    </LinearGradientBrush>
+                                                </Button.Background>
+                                                <TextBlock Text="{Binding IndirButton}" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="13"/>
+                                            </Button>
+                                        </Grid>
+                                        <TextBlock Text="{Binding DownloadModelTipMessage}" Foreground="#808090" FontSize="11" Margin="2,0,0,0" TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                    
+                                    <!-- Pull Progress & Error Message -->
+                                    <Panel Grid.Row="1" VerticalAlignment="Center">
+                                        <!-- Progress Panel -->
+                                        <Border Background="#1C1B2A" BorderBrush="#2A2A3C" BorderThickness="1" CornerRadius="8" Padding="12" IsVisible="{Binding IsDownloadingModel}">
+                                            <StackPanel Spacing="6">
+                                                <Grid ColumnDefinitions="*, Auto">
+                                                    <TextBlock Grid.Column="0" Text="{Binding DownloadStatus}" Foreground="White" FontSize="11" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding DownloadProgressPercentage}" Foreground="#00B4D8" FontSize="11" FontWeight="Bold"/>
+                                                </Grid>
+                                                <ProgressBar Value="{Binding DownloadProgress}" Minimum="0" Maximum="100" Height="6" CornerRadius="3" Foreground="#00B4D8" Background="#101018"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- Error Panel -->
+                                        <Border Background="#2D1C1C" BorderBrush="#FF5252" BorderThickness="1" CornerRadius="8" Padding="12" IsVisible="{Binding HasDownloadError}">
+                                            <Grid ColumnDefinitions="Auto, *">
+                                                <TextBlock Grid.Column="0" Text="⚠️" FontSize="16" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                                <TextBlock Grid.Column="1" Text="{Binding DownloadStatus}" Foreground="#FF8A8A" FontSize="12" FontWeight="SemiBold" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                            </Grid>
+                                        </Border>
+                                    </Panel>
+                                    
+                                    <!-- Library Link Footer -->
+                                    <Border Grid.Row="2" BorderBrush="#15FFFFFF" BorderThickness="0,1,0,0" Padding="0,10,0,0" Margin="0,5,0,0">
+                                        <StackPanel Spacing="4" HorizontalAlignment="Center">
+                                            <TextBlock Text="{Binding ModelKutuphanesiLinkText}" Foreground="#808090" FontSize="11" HorizontalAlignment="Center"/>
+                                            <Button Command="{Binding OpenOllamaLibraryCommand}" Background="Transparent" BorderThickness="0" Padding="0" Cursor="Hand" HorizontalAlignment="Center">
+                                                <TextBlock Text="https://ollama.com/library" Foreground="#00B4D8" FontSize="11" FontWeight="SemiBold" TextDecorations="Underline"/>
+                                            </Button>
+                                        </StackPanel>
+                                    </Border>
+                                </Grid>
+                            </Grid>
+                        </Grid>
+                        
+                        <!-- Modal Footer -->
+                        <Button Grid.Row="2" Command="{Binding CloseModelManagerCommand}" 
+                                HorizontalAlignment="Stretch" Height="38" CornerRadius="8"
+                                Cursor="Hand">
+                            <Button.Background>
+                                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                                    <GradientStop Color="#00B4D8" Offset="0"/>
+                                    <GradientStop Color="#9D4EDD" Offset="1"/>
+                                </LinearGradientBrush>
+                            </Button.Background>
+                            <TextBlock Text="{Binding CloseButton}" Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center" FontWeight="SemiBold" FontSize="14"/>
+                        </Button>
+                        
+                    </Grid>
+                    
+                    <!-- Delete Confirmation Overlay -->
+                    <Grid IsVisible="{Binding IsDeleteConfirmationOpen}" Background="#E008080C" ZIndex="100">
+                        <Border CornerRadius="12" Background="#1C1B2A" BorderBrush="#3D1C2A" BorderThickness="1"
+                                Width="340" Height="220" VerticalAlignment="Center" HorizontalAlignment="Center"
+                                Padding="20" BoxShadow="0 4 16 rgba(0, 0, 0, 0.5)">
+                            <Grid RowDefinitions="Auto, *, Auto">
+                                <TextBlock Grid.Row="0" Text="{Binding ConfirmDeleteTitle}" Foreground="#FF5555" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                <TextBlock Grid.Row="1" Text="{Binding ConfirmDeletePrompt}" Foreground="White" FontSize="13" TextAlignment="Center" TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                <Grid Grid.Row="2" ColumnDefinitions="*, *" ColumnSpacing="15">
+                                    <Button Grid.Column="0" Command="{Binding CancelDeleteCommand}" Height="34" CornerRadius="6" Background="#2A2A3C" BorderBrush="#334155" BorderThickness="1" Cursor="Hand" HorizontalAlignment="Stretch">
+                                        <TextBlock Text="{Binding IptalButton}" Foreground="White" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Button>
+                                    <Button Grid.Column="1" Command="{Binding ConfirmDeleteCommand}" Height="34" CornerRadius="6" Cursor="Hand" HorizontalAlignment="Stretch">
+                                        <Button.Background>
+                                            <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                                                <GradientStop Color="#FF5555" Offset="0"/>
+                                                <GradientStop Color="#9D4EDD" Offset="1"/>
+                                            </LinearGradientBrush>
+                                        </Button.Background>
+                                        <TextBlock Text="{Binding SilButton}" Foreground="White" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Button>
+                                </Grid>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Panel>
+            </Border>
+        </Grid>
+
         <!-- Settings Overlay Modal -->
         <Grid Grid.Column="0" Grid.ColumnSpan="2" Background="#A008080C" IsVisible="{Binding IsSettingsOpen}" ZIndex="999">
             <!-- Modal Background Click to Close -->
@@ -699,9 +922,9 @@ limitations under the License.
                         <!-- About / Attribution -->
                         <Border BorderBrush="#15FFFFFF" BorderThickness="0,1,0,0" Padding="0,12,0,0" Margin="0,10,0,0">
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4">
-                                <TextBlock Text="IronPrompt v1.1.0 • Built with" Foreground="#808090" FontSize="11"/>
+                                <TextBlock Text="{Binding AppVersionText}" Foreground="#808090" FontSize="11"/>
                                 <TextBlock Text="Avalonia UI" Foreground="#00B4D8" FontSize="11" FontWeight="SemiBold"/>
-                                <TextBlock Text="(MIT License)" Foreground="#808090" FontSize="11"/>
+                                <TextBlock Text="{Binding AppLicenseText}" Foreground="#808090" FontSize="11"/>
                             </StackPanel>
                         </Border>
                     </StackPanel>

@@ -412,5 +412,30 @@ namespace IronPrompt.Views
                 vm.IsSettingsOpen = false;
             }
         }
+
+        private void ModelManagerAdorner_PointerPressed(object? sender, PointerPressedEventArgs e)
+        {
+            if (DataContext is MainWindowViewModel vm)
+            {
+                if (!vm.IsDownloadingModel)
+                {
+                    vm.IsModelManagerOpen = false;
+                }
+            }
+        }
+
+        private void ModelTabButton_Click(object? sender, RoutedEventArgs e)
+        {
+            if (sender is Button button && button.Tag is string tagStr && int.TryParse(tagStr, out int tabIndex))
+            {
+                if (DataContext is MainWindowViewModel vm)
+                {
+                    if (!vm.IsDownloadingModel)
+                    {
+                        vm.SelectedModelTab = tabIndex;
+                    }
+                }
+            }
+        }
     }
 }

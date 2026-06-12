@@ -25,6 +25,7 @@ using System.Threading.Tasks;
 
 namespace IronPrompt.ViewModels;
 
+
 public enum MessagePartType
 {
     Text,
@@ -481,6 +482,7 @@ public partial class MainWindowViewModel : ObservableObject
         RefreshLocalizedStrings();
     }
 
+
     public void RefreshLocalizedStrings()
     {
         OnPropertyChanged(nameof(SohbetlerTitle));
@@ -505,8 +507,23 @@ public partial class MainWindowViewModel : ObservableObject
         OnPropertyChanged(nameof(LanguageLabel));
         OnPropertyChanged(nameof(CloseButton));
         OnPropertyChanged(nameof(ModelVisionWarningText));
+        OnPropertyChanged(nameof(ModelYonetimiTitle));
+        OnPropertyChanged(nameof(YukluModellerTab));
+        OnPropertyChanged(nameof(ModelIndirTab));
+        OnPropertyChanged(nameof(ModelKutuphanesiLinkText));
+        OnPropertyChanged(nameof(ModelBulunamadiMessage));
+        OnPropertyChanged(nameof(ModelAdiGirinPlaceholder));
+        OnPropertyChanged(nameof(IndirButton));
+        OnPropertyChanged(nameof(BoyutLabel));
+        OnPropertyChanged(nameof(GecersizModelWarning));
+        OnPropertyChanged(nameof(ConfirmDeleteTitle));
+        OnPropertyChanged(nameof(ConfirmDeletePrompt));
+        OnPropertyChanged(nameof(IptalButton));
+        OnPropertyChanged(nameof(SilButton));
+        OnPropertyChanged(nameof(DownloadModelTipMessage));
         
         if (SelectedSession != null && SelectedSession.Id == "loading")
+
         {
             SelectedSession.Title = CurrentLanguage == "tr" ? "Yükleniyor..." : "Loading...";
         }
@@ -557,6 +574,48 @@ public partial class MainWindowViewModel : ObservableObject
     public string LanguageLabel => CurrentLanguage == "tr" ? "Dil Seçimi:" : "Language Selection:";
     public string CloseButton => CurrentLanguage == "tr" ? "Kapat" : "Close";
 
+    public string AppVersionText
+    {
+        get
+        {
+            var version = typeof(MainWindowViewModel).Assembly.GetName().Version;
+            string versionStr = version != null 
+                ? $"v{version.Major}.{version.Minor}.{version.Build}" 
+                : "v1.2.0";
+            return $"IronPrompt {versionStr} • Built with";
+        }
+    }
+
+    public string AppLicenseText => "(Apache 2.0 License)";
+
+    public string ModelYonetimiTitle => CurrentLanguage == "tr" ? "Model Yönetimi" : "Model Management";
+    public string YukluModellerTab => CurrentLanguage == "tr" ? "Yüklü Modeller" : "Installed Models";
+    public string ModelIndirTab => CurrentLanguage == "tr" ? "Model İndir" : "Download Model";
+    public string ModelKutuphanesiLinkText => CurrentLanguage == "tr" 
+        ? "Daha fazla model için Ollama model kütüphanesini ziyaret edin:" 
+        : "For more models, visit the Ollama model library:";
+    public string ModelBulunamadiMessage => CurrentLanguage == "tr" 
+        ? "Yüklü model bulunamadı. Lütfen 'Model İndir' sekmesinden yeni bir model yükleyin." 
+        : "No installed models found. Please download a model from the 'Download Model' tab.";
+    public string ModelAdiGirinPlaceholder => CurrentLanguage == "tr" ? "Model adı girin (örn: llama3)..." : "Enter model name (e.g., gemma4)...";
+    public string IndirButton => CurrentLanguage == "tr" ? "İndir" : "Download";
+    public string BoyutLabel => CurrentLanguage == "tr" ? "Boyut:" : "Size:";
+    public string GecersizModelWarning => CurrentLanguage == "tr"
+        ? "Seçilen model bilgisayarınızda yüklü değil! Lütfen modeli indirin veya başka bir model seçin."
+        : "The selected model is not installed! Please download it or select another model.";
+
+    public string ConfirmDeleteTitle => CurrentLanguage == "tr" ? "Modeli Sil" : "Delete Model";
+    public string ConfirmDeletePrompt => CurrentLanguage == "tr" 
+        ? $"'{DeleteModelName}' modelini silmek istediğinize emin misiniz?\nBu işlem geri alınamaz." 
+        : $"Are you sure you want to delete '{DeleteModelName}'?\nThis action cannot be undone.";
+    public string IptalButton => CurrentLanguage == "tr" ? "İptal" : "Cancel";
+    public string SilButton => CurrentLanguage == "tr" ? "Sil" : "Delete";
+
+    public string DownloadModelTipMessage => CurrentLanguage == "tr"
+        ? "💡 Belirli bir sürüm indirmek için model:etiket formatını kullanabilirsiniz (örn: gemma4:e4b)"
+        : "💡 You can use model:tag format to download specific versions (e.g., gemma4:e4b)";
+
+
     [ObservableProperty]
     private bool _isModelVisionCompatible = true;
 
@@ -603,7 +662,55 @@ public partial class MainWindowViewModel : ObservableObject
     private bool _isSettingsOpen;
 
     [ObservableProperty]
+    private bool _isModelManagerOpen;
+
+    [ObservableProperty]
+    private bool _isDeleteConfirmationOpen;
+
+    [ObservableProperty]
+    private string _deleteModelName = string.Empty;
+
+    partial void OnDeleteModelNameChanged(string value)
+    {
+        OnPropertyChanged(nameof(ConfirmDeletePrompt));
+    }
+
+    [ObservableProperty]
+    private int _selectedModelTab = 0; // 0 = Local Models, 1 = Download
+
+    partial void OnSelectedModelTabChanged(int value)
+    {
+        HasDownloadError = false;
+        DownloadStatus = string.Empty;
+    }
+
+    public ObservableCollection<OllamaModel> LocalModels { get; } = new();
+
+    [ObservableProperty]
+    private string _modelSearchQuery = string.Empty;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(CloseModelManagerCommand))]
+    private bool _isDownloadingModel;
+
+    [ObservableProperty]
+    private string _downloadModelName = string.Empty;
+
+    [ObservableProperty]
+    private double _downloadProgress;
+
+    [ObservableProperty]
+    private string _downloadProgressPercentage = "0%";
+
+    [ObservableProperty]
+    private string _downloadStatus = string.Empty;
+
+    [ObservableProperty]
+    private bool _hasDownloadError;
+
+    [ObservableProperty]
     private bool _autoScrollEnabled = true;
+
 
     public ObservableCollection<string> PendingImagePaths { get; } = new();
 
@@ -874,7 +981,19 @@ public partial class MainWindowViewModel : ObservableObject
                 await Task.Delay(1500);
             }
 
-            // Connection is established. Silently update capability checking.
+            // Connection is established. Load models and verify if we need to open the model manager.
+            await LoadLocalModelsAsync();
+
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (LocalModels.Count == 0)
+                {
+                    IsModelManagerOpen = true;
+                    SelectedModelTab = 1; // Direct to download tab
+                }
+            });
+
+            // Silently update capability checking.
             var modelName = string.IsNullOrWhiteSpace(SelectedSession?.Subtitle) ? "gemma4:e4b" : SelectedSession.Subtitle;
             await CheckModelVisionCapability(modelName);
         }
@@ -884,6 +1003,7 @@ public partial class MainWindowViewModel : ObservableObject
         }
     }
 
+
     public MainWindowViewModel()
     {
         _selectedSession = new ChatSessionViewModel
@@ -892,8 +1012,11 @@ public partial class MainWindowViewModel : ObservableObject
             Title = _currentLanguage == "tr" ? "Yükleniyor..." : "Loading...",
             Subtitle = "gemma4:e4b"
         };
-        _ = LoadSessionsAsync();
+        // Run heavy I/O and network initialization tasks on a background thread to keep UI startup instant
+        _ = Task.Run(async () => await LoadSessionsAsync());
+        _ = Task.Run(async () => await StartOllamaConnectionCheck());
     }
+
 
     private async Task LoadSessionsAsync()
     {
@@ -1079,7 +1202,26 @@ public partial class MainWindowViewModel : ObservableObject
 
         var modelName = string.IsNullOrWhiteSpace(SelectedSession.Subtitle) ? "gemma4:e4b" : SelectedSession.Subtitle;
 
+        // Verify model exists before sending prompt to avoid 404 rejections
+        bool modelExists = await VerifyModelExistsAsync(modelName);
+        if (!modelExists)
+        {
+            var warningText = GecersizModelWarning;
+            var warningMessage = new ChatMessageViewModel 
+            { 
+                SenderName = modelName, 
+                IsUser = false, 
+                IsWaiting = false 
+            };
+            warningMessage.AppendAndParse(warningText);
+            SelectedSession.Messages.Add(warningMessage);
+
+            _ = OpenModelManager();
+            return;
+        }
+
         if (PendingImagePaths.Count > 0)
+
         {
             await CheckModelVisionCapability(modelName);
             if (!IsModelVisionCompatible)
@@ -1245,6 +1387,275 @@ public partial class MainWindowViewModel : ObservableObject
         if (Sessions.Count == 0)
         {
             CreateNewSession();
+        }
+    }
+
+    [RelayCommand]
+    private async Task OpenModelManager()
+    {
+        IsModelManagerOpen = true;
+        HasDownloadError = false;
+        DownloadStatus = string.Empty;
+        await LoadLocalModelsAsync();
+    }
+
+    [RelayCommand]
+    private void ShowDeleteConfirmation(string modelName)
+    {
+        DeleteModelName = modelName;
+        IsDeleteConfirmationOpen = true;
+    }
+
+    [RelayCommand]
+    private void CancelDelete()
+    {
+        IsDeleteConfirmationOpen = false;
+        DeleteModelName = string.Empty;
+    }
+
+    [RelayCommand]
+    private async Task ConfirmDelete()
+    {
+        if (string.IsNullOrWhiteSpace(DeleteModelName)) return;
+
+        var modelToDelete = DeleteModelName;
+        IsDeleteConfirmationOpen = false;
+        DeleteModelName = string.Empty;
+
+        try
+        {
+            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+            var requestData = new OllamaDeleteRequest { Name = modelToDelete };
+            
+            using var request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost:11434/api/delete")
+            {
+                Content = new StringContent(
+                    JsonSerializer.Serialize(requestData, OllamaJsonContext.Default.OllamaDeleteRequest),
+                    Encoding.UTF8,
+                    "application/json"
+                )
+            };
+
+            using var response = await client.SendAsync(request);
+            if (response.IsSuccessStatusCode)
+            {
+                await LoadLocalModelsAsync();
+
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (SelectedSession != null && SelectedSession.Subtitle.Equals(modelToDelete, StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (LocalModels.Count > 0)
+                        {
+                            SelectedSession.Subtitle = LocalModels[0].Name;
+                        }
+                        else
+                        {
+                            SelectedSession.Subtitle = "gemma4:e4b";
+                        }
+                        _ = SaveSessionAsync(SelectedSession);
+                        _ = CheckModelVisionCapability(SelectedSession.Subtitle);
+                    }
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error deleting model: {ex.Message}");
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanCloseModelManager))]
+    private void CloseModelManager()
+    {
+        IsModelManagerOpen = false;
+    }
+
+    private bool CanCloseModelManager() => !IsDownloadingModel;
+
+    [RelayCommand]
+    private void SelectModel(string modelName)
+    {
+        if (SelectedSession != null)
+        {
+            SelectedSession.Subtitle = modelName;
+            _ = SaveSessionAsync(SelectedSession);
+            _ = CheckModelVisionCapability(modelName);
+        }
+        IsModelManagerOpen = false;
+    }
+
+    [RelayCommand]
+    private void OpenOllamaLibrary()
+    {
+        try
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = "https://ollama.com/library",
+                UseShellExecute = true
+            };
+            System.Diagnostics.Process.Start(psi);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error opening library URL: {ex.Message}");
+        }
+    }
+
+    public async Task LoadLocalModelsAsync()
+    {
+        try
+        {
+            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
+            using var response = await client.GetAsync("http://localhost:11434/api/tags");
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                var listResponse = JsonSerializer.Deserialize(json, OllamaJsonContext.Default.OllamaListResponse);
+                await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    LocalModels.Clear();
+                    if (listResponse?.Models != null)
+                    {
+                        foreach (var model in listResponse.Models)
+                        {
+                            LocalModels.Add(model);
+                        }
+                    }
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error loading local models: {ex.Message}");
+        }
+    }
+
+    private async Task<bool> VerifyModelExistsAsync(string modelName)
+    {
+        if (string.IsNullOrWhiteSpace(modelName)) return false;
+        try
+        {
+            using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(3) };
+            string payload = $"{{\"name\":\"{modelName}\"}}";
+            using var content = new StringContent(payload, Encoding.UTF8, "application/json");
+            using var response = await client.PostAsync("http://localhost:11434/api/show", content);
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task PullModel(string? parameter)
+    {
+        string target = string.IsNullOrWhiteSpace(parameter) ? DownloadModelName : parameter;
+        if (string.IsNullOrWhiteSpace(target) || IsDownloadingModel) return;
+
+        var modelToPull = target.Trim();
+        IsDownloadingModel = true;
+        HasDownloadError = false;
+        DownloadProgress = 0;
+        DownloadProgressPercentage = "0%";
+        DownloadStatus = CurrentLanguage == "tr" ? "İndirme başlatılıyor..." : "Starting download...";
+
+        try
+        {
+            using var client = new HttpClient { Timeout = System.Threading.Timeout.InfiniteTimeSpan };
+            var requestData = new OllamaPullRequest { Name = modelToPull, Stream = true };
+            var jsonContent = new StringContent(
+                JsonSerializer.Serialize(requestData, OllamaJsonContext.Default.OllamaPullRequest),
+                Encoding.UTF8,
+                "application/json"
+            );
+
+            using var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost:11434/api/pull") { Content = jsonContent };
+            using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            response.EnsureSuccessStatusCode();
+
+            using var stream = await response.Content.ReadAsStreamAsync();
+            using var reader = new StreamReader(stream);
+
+            while (true)
+            {
+                var line = await reader.ReadLineAsync();
+                if (line == null) break;
+                if (string.IsNullOrWhiteSpace(line)) continue;
+
+                var chunk = JsonSerializer.Deserialize(line, OllamaJsonContext.Default.OllamaPullResponse);
+                if (chunk != null)
+                {
+                    if (!string.IsNullOrEmpty(chunk.Error))
+                    {
+                        throw new Exception(chunk.Error);
+                    }
+
+                    await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+                    {
+                        if (!string.IsNullOrEmpty(chunk.Status))
+                        {
+                            DownloadStatus = chunk.Status;
+                        }
+
+                        if (chunk.Total.HasValue && chunk.Completed.HasValue && chunk.Total.Value > 0)
+                        {
+                            double percentage = (double)chunk.Completed.Value / chunk.Total.Value * 100;
+                            DownloadProgress = percentage;
+                            
+                            double completedGB = (double)chunk.Completed.Value / (1024 * 1024 * 1024);
+                            double totalGB = (double)chunk.Total.Value / (1024 * 1024 * 1024);
+                            DownloadProgressPercentage = $"{percentage:F1}% ({completedGB:F2} / {totalGB:F2} GB)";
+                        }
+                    });
+                }
+            }
+
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                DownloadProgress = 100;
+                DownloadProgressPercentage = "100%";
+                DownloadStatus = CurrentLanguage == "tr" ? "Başarıyla indirildi!" : "Successfully pulled!";
+            });
+
+            await LoadLocalModelsAsync();
+            
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (SelectedSession != null)
+                {
+                    SelectedSession.Subtitle = modelToPull;
+                    _ = SaveSessionAsync(SelectedSession);
+                    _ = CheckModelVisionCapability(modelToPull);
+                }
+                DownloadModelName = string.Empty;
+            });
+        }
+        catch (Exception ex)
+        {
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                HasDownloadError = true;
+                string errMsg = ex.Message;
+                if (errMsg.Contains("file does not exist", StringComparison.OrdinalIgnoreCase) ||
+                    errMsg.Contains("not found", StringComparison.OrdinalIgnoreCase) ||
+                    errMsg.Contains("does not exist", StringComparison.OrdinalIgnoreCase))
+                {
+                    errMsg = CurrentLanguage == "tr"
+                        ? "Model bulunamadı! Lütfen model ismini kontrol edin."
+                        : "Model not found! Please check the model name.";
+                }
+                DownloadStatus = (CurrentLanguage == "tr" ? "Hata: " : "Error: ") + errMsg;
+            });
+        }
+        finally
+        {
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                IsDownloadingModel = false;
+            });
         }
     }
 }

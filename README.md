@@ -14,6 +14,9 @@ It is fully optimized for **.NET 10** and built from the ground up to support **
 ## Key Features
 
 *   **Premium Glassmorphism UI**: Harmony-driven dark mode color palette (`#101018` base) styled with smooth gradient buttons, semi-transparent panels, and subtle micro-animations.
+*   **Integrated Model Manager**: A premium tabbed overlay modal for managing Ollama models:
+    *   **Installed Models**: View all locally installed models with formatted sizes in GB, select active session models, or securely delete models with warning confirmations.
+    *   **Download Models**: Input and pull custom tags from Ollama Library (with real-time progress stream, validation tips, and robust localized error interception).
 *   **Hot-Swappable Localization (TR / EN)**: Dynamic Turkish and English support. All static texts, placeholders, and error messages translate instantly without application restarts.
 *   **Image Attachment & Vision Support**: Add images to your chat sessions via drag-and-drop, clipboard pasting (`Ctrl+V`), or open file picker. Uses connection-aware lazy capability checking to verify model compatibility.
 *   **Modern Settings Modal**: An overlay modal for configuring application language and toggling the auto-scroll behavior (to control whether the chat automatically scrolls down as responses stream in).

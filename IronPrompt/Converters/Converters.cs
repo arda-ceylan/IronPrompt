@@ -162,4 +162,59 @@ namespace IronPrompt.Converters
             throw new NotImplementedException();
         }
     }
+
+    public class IntToBoolConverter : IValueConverter
+    {
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            if (value is int currentVal && parameter is string targetValStr && int.TryParse(targetValStr, out int targetVal))
+            {
+                return currentVal == targetVal;
+            }
+            return false;
+        }
+
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class IntToBackgroundConverter : IValueConverter
+    {
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            if (value is int currentVal && parameter is string targetValStr && int.TryParse(targetValStr, out int targetVal))
+            {
+                return currentVal == targetVal
+                    ? new SolidColorBrush(Color.Parse("#00B4D8"))
+                    : Brushes.Transparent;
+            }
+            return Brushes.Transparent;
+        }
+
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
+    public class IntToForegroundConverter : IValueConverter
+    {
+        public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            if (value is int currentVal && parameter is string targetValStr && int.TryParse(targetValStr, out int targetVal))
+            {
+                return currentVal == targetVal
+                    ? Brushes.White
+                    : new SolidColorBrush(Color.Parse("#8E8E9F"));
+            }
+            return Brushes.White;
+        }
+
+        public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
 }
