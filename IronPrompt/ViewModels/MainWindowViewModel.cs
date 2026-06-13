@@ -1180,11 +1180,39 @@ public partial class MainWindowViewModel : ObservableObject
     private void CreateNewSession()
     {
         string defaultTitle = CurrentLanguage == "tr" ? "Yeni Sohbet" : "New Chat";
+        
+        // Find default model dynamically based on installed local models
+        string defaultModel = "gemma4:e4b";
+        if (LocalModels.Count > 0)
+        {
+            bool activeModelInstalled = false;
+            if (SelectedSession != null)
+            {
+                foreach (var model in LocalModels)
+                {
+                    if (model.Name.Equals(SelectedSession.Subtitle, StringComparison.OrdinalIgnoreCase))
+                    {
+                        activeModelInstalled = true;
+                        break;
+                    }
+                }
+            }
+
+            if (activeModelInstalled && SelectedSession != null)
+            {
+                defaultModel = SelectedSession.Subtitle;
+            }
+            else
+            {
+                defaultModel = LocalModels[0].Name;
+            }
+        }
+
         var newSession = new ChatSessionViewModel
         {
             Id = Guid.NewGuid().ToString(),
             Title = $"{defaultTitle} {_sessionCounter++}",
-            Subtitle = "gemma4:e4b"
+            Subtitle = defaultModel
         };
         newSession.Initialize(async s => await SaveSessionAsync(s));
 
@@ -1192,6 +1220,9 @@ public partial class MainWindowViewModel : ObservableObject
         SelectedSession = newSession;
 
         _ = SaveSessionAsync(newSession);
+        
+        // Immediately open the model manager so the user can verify/select their model choice
+        _ = OpenModelManager();
     }
 
     [RelayCommand]
@@ -1397,6 +1428,11 @@ public partial class MainWindowViewModel : ObservableObject
         HasDownloadError = false;
         DownloadStatus = string.Empty;
         await LoadLocalModelsAsync();
+        
+        await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            SelectedModelTab = LocalModels.Count > 0 ? 0 : 1;
+        });
     }
 
     [RelayCommand]
